@@ -1,0 +1,84 @@
+﻿@page "/admin"
+@using MiNegocio.Client.Shared.Interfaces
+@using MiNegocio.Shared.Models
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@inject IAdminService AdminService
+@inject NavigationManager NavigationManager
+
+<h3>Admin Panel</h3>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">User Management</h5>
+                <p class="card-text">Manage system users and their permissions.</p>
+                <a href="/admin/users" class="btn btn-primary">Manage Users</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Company Management</h5>
+                <p class="card-text">Manage companies and their information.</p>
+                <a href="/admin/companies" class="btn btn-primary">Manage Companies</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Quick Stats</h5>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="alert alert-info">
+                    <h4>Total Users</h4>
+                    <p class="display-4">@totalUsers</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="alert alert-success">
+                    <h4>Total Companies</h4>
+                    <p class="display-4">@totalCompanies</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="alert alert-warning">
+                    <h4>Admin Users</h4>
+                    <p class="display-4">@adminUsers</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int totalUsers = 0;
+    private int totalCompanies = 0;
+    private int adminUsers = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStats();
+    }
+
+    private async Task LoadStats()
+    {
+        try
+        {
+            var users = await AdminService.GetAllUsersAsync();
+            var companies = await AdminService.GetAllCompaniesAsync();
+
+            totalUsers = users.Count;
+            totalCompanies = companies.Count;
+            adminUsers = users.Count(u => u.Role == UserRole.Admin);
+        }
+        catch (Exception ex)
+        {
+            // Handle error
+        }
+    }
+}

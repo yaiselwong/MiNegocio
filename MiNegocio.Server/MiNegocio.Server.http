@@ -1,0 +1,6 @@
+@MiNegocio.Server_HostAddress = http://localhost:5032
+
+GET {{MiNegocio.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

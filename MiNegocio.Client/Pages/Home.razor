@@ -1,0 +1,50 @@
+﻿@* @page "/"
+
+<PageTitle>Home</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app. *@
+@page "/"
+@using MiNegocio.Client.Shared.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject CustomAuthStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<AuthorizeView>
+    <Authorized>
+        <div class="text-center">
+            <h1>Welcome to BlazorAuthApp!</h1>
+            
+            <AuthorizeView Roles="Admin">
+                <Authorized Context="dash">
+                    <div class="alert alert-info">
+                        <h4>Admin Dashboard</h4>
+                        <p>You have administrative privileges.</p>
+                        <a href="/admin" class="btn btn-primary">Go to Admin Panel</a>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
+            
+            <AuthorizeView Roles="SystemUser">
+                <Authorized Context="admin">
+                    <div class="alert alert-success">
+                        <h4>Company Dashboard</h4>
+                        <p>You can view your company information.</p>
+                        <a href="/company-dashboard" class="btn btn-primary">Go to Company Dashboard</a>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <div class="text-center">
+            <h1>Welcome to BlazorAuthApp!</h1>
+            <p class="lead">Please login or register to access the application.</p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="/login" class="btn btn-primary">Login</a>
+                <a href="/register" class="btn btn-outline-primary">Register</a>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
