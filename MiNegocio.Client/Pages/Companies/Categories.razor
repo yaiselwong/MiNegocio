@@ -1,15 +1,16 @@
 ﻿@page "/company-dashboard/categories"
-@using MiNegocio.Client.Shared.Services
+@using MiNegocio.Client.Shared.Interfaces
+@using MiNegocio.Shared.Dto.Request
 @using MiNegocio.Shared.Dto.Response
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "SystemUser")]
-@inject ICategoryManagementService CategoryService
-@inject CustomAuthStateProvider AuthStateProvider
+@inject ICompanyDataService CompanyDataService
+@inject IJSRuntime JS
 
 <h3>Gestión de Categorías</h3>
 
 <div class="mb-3">
-    <button class="btn btn-primary" @onclick="ShowCreateCategoryModal">Agregar Categoría</button>
+    <button class="btn btn-primary" @onclick="ShowCreateModal">Nueva Categoría</button>
 </div>
 
 @if (categories == null)
@@ -24,7 +25,7 @@
 else if (!categories.Any())
 {
     <div class="alert alert-info">
-        No hay categorías registradas. Agrega tu primera categoría para empezar.
+        No hay categorías registradas. Crea tu primera categoría para comenzar.
     </div>
 }
 else
@@ -47,20 +48,22 @@ else
                         <td>@category.Name</td>
                         <td>@category.Description</td>
                         <td>
-                            <span class="badge @(category.IsActive ? "bg-success" : "bg-secondary")">
-                                @(category.IsActive ? "Activa" : "Inactiva")
-                            </span>
+                            @if (category.IsActive)
+                            {
+                                <span class="badge bg-success">Activa</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactiva</span>
+                            }
                         </td>
-                        <td>
-                            <span class="badge bg-primary">@category.ProductCount</span>
-                        </td>
+                        <td>@category.ProductCount</td>
                         <td>
                             <div class="btn-group" role="group">
                                 <button class="btn btn-sm btn-outline-primary" @onclick="() => EditCategory(category)" title="Editar">
                                     <span class="oi oi-pencil"></span>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCategory(category)" title="Eliminar"
-                                        disabled="@(category.ProductCount > 0)">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCategory(category)" title="Eliminar" disabled="@category.ProductCount > 0">
                                     <span class="oi oi-trash"></span>
                                 </button>
                             </div>
@@ -72,31 +75,36 @@ else
     </div>
 }
 
-<!-- Create Category Modal -->
-@if (showCreateCategoryModal)
+<!-- Create Modal -->
+@if (showCreateModal)
 {
     <div class="modal d-block show" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Agregar Nueva Categoría</h5>
-                    <button type="button" class="btn-close" @onclick="HideCreateCategoryModal"></button>
+                    <h5 class="modal-title">Nueva Categoría</h5>
+                    <button type="button" class="btn-close" @onclick="HideCreateModal"></button>
                 </div>
                 <div class="modal-body">
-                    <EditForm Model="@newCategory" OnValidSubmit="@CreateCategory">
+                    <EditForm Model="@createRequest" OnValidSubmit="@CreateCategory">
                         <DataAnnotationsValidator />
                         <ValidationSummary class="text-danger" />
 
                         <div class="mb-3">
-                            <label for="category-name" class="form-label">Nombre:</label>
-                            <InputText id="category-name" class="form-control" @bind-Value="newCategory.Name" />
-                            <ValidationMessage For="@(() => newCategory.Name)" class="text-danger" />
+                            <label class="form-label">Nombre:</label>
+                            <InputText class="form-control" @bind-Value="createRequest.Name" />
+                            <ValidationMessage For="@(() => createRequest.Name)" class="text-danger" />
                         </div>
 
                         <div class="mb-3">
-                            <label for="category-description" class="form-label">Descripción:</label>
-                            <TextArea id="category-description" class="form-control" @bind-Value="newCategory.Description" rows="3" />
-                            <ValidationMessage For="@(() => newCategory.Description)" class="text-danger" />
+                            <label class="form-label">Descripción:</label>
+                            <InputTextArea class="form-control" @bind-Value="createRequest.Description" />
+                            <ValidationMessage For="@(() => createRequest.Description)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="createRequest.IsActive" />
+                            <label class="form-check-label">Activa</label>
                         </div>
 
                         <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
@@ -117,31 +125,36 @@ else
     </div>
 }
 
-<!-- Edit Category Modal -->
-@if (showEditCategoryModal && editingCategory != null)
+<!-- Edit Modal -->
+@if (showEditModal && editingCategory != null)
 {
     <div class="modal d-block show" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Editar Categoría</h5>
-                    <button type="button" class="btn-close" @onclick="HideEditCategoryModal"></button>
+                    <button type="button" class="btn-close" @onclick="HideEditModal"></button>
                 </div>
                 <div class="modal-body">
-                    <EditForm Model="@editCategoryRequest" OnValidSubmit="@UpdateCategory">
+                    <EditForm Model="@editRequest" OnValidSubmit="@UpdateCategory">
                         <DataAnnotationsValidator />
                         <ValidationSummary class="text-danger" />
 
                         <div class="mb-3">
-                            <label for="edit-category-name" class="form-label">Nombre:</label>
-                            <InputText id="edit-category-name" class="form-control" @bind-Value="editCategoryRequest.Name" />
-                            <ValidationMessage For="@(() => editCategoryRequest.Name)" class="text-danger" />
+                            <label class="form-label">Nombre:</label>
+                            <InputText class="form-control" @bind-Value="editRequest.Name" />
+                            <ValidationMessage For="@(() => editRequest.Name)" class="text-danger" />
                         </div>
 
                         <div class="mb-3">
-                            <label for="edit-category-description" class="form-label">Descripción:</label>
-                            <TextArea id="edit-category-description" class="form-control" @bind-Value="editCategoryRequest.Description" rows="3" />
-                            <ValidationMessage For="@(() => editCategoryRequest.Description)" class="text-danger" />
+                            <label class="form-label">Descripción:</label>
+                            <InputTextArea class="form-control" @bind-Value="editRequest.Description" />
+                            <ValidationMessage For="@(() => editRequest.Description)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="editRequest.IsActive" />
+                            <label class="form-check-label">Activa</label>
                         </div>
 
                         <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
@@ -164,12 +177,12 @@ else
 
 @code {
     private List<CategoryDto> categories = new();
-    private bool showCreateCategoryModal = false;
-    private bool showEditCategoryModal = false;
+    private bool showCreateModal = false;
+    private bool showEditModal = false;
     private bool isSubmitting = false;
-    private CreateCategoryRequest newCategory = new();
+    private CreateCategoryRequest createRequest = new();
     private CategoryDto? editingCategory;
-    private CreateCategoryRequest editCategoryRequest = new();
+    private UpdateCategoryRequest editRequest = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -180,28 +193,23 @@ else
     {
         try
         {
-            var companyId = await AuthStateProvider.GetCompanyIdAsync();
-            if (companyId.HasValue)
-            {
-                categories = await CategoryService.GetCategoriesByCompanyAsync(companyId.Value);
-            }
+            categories = await CompanyDataService.GetCategoriesAsync();
         }
         catch (Exception ex)
         {
-            // Handle error
             Console.WriteLine($"Error loading categories: {ex.Message}");
         }
     }
 
-    private void ShowCreateCategoryModal()
+    private void ShowCreateModal()
     {
-        newCategory = new CreateCategoryRequest();
-        showCreateCategoryModal = true;
+        createRequest = new CreateCategoryRequest();
+        showCreateModal = true;
     }
 
-    private void HideCreateCategoryModal()
+    private void HideCreateModal()
     {
-        showCreateCategoryModal = false;
+        showCreateModal = false;
     }
 
     private async Task CreateCategory()
@@ -209,16 +217,12 @@ else
         isSubmitting = true;
         try
         {
-            var result = await CategoryService.CreateCategoryAsync(newCategory, 1); // TODO: Get company ID
-            if (result != null)
-            {
-                showCreateCategoryModal = false;
-                await LoadCategories();
-            }
+            var result = await CompanyDataService.CreateCategoryAsync(createRequest);
+            showCreateModal = false;
+            await LoadCategories();
         }
         catch (Exception ex)
         {
-            // Handle error
             Console.WriteLine($"Error creating category: {ex.Message}");
         }
         finally
@@ -230,17 +234,19 @@ else
     private void EditCategory(CategoryDto category)
     {
         editingCategory = category;
-        editCategoryRequest = new CreateCategoryRequest
+        editRequest = new UpdateCategoryRequest
         {
+            Id = category.Id,
             Name = category.Name,
-            Description = category.Description
+            Description = category.Description,
+            IsActive = category.IsActive
         };
-        showEditCategoryModal = true;
+        showEditModal = true;
     }
 
-    private void HideEditCategoryModal()
+    private void HideEditModal()
     {
-        showEditCategoryModal = false;
+        showEditModal = false;
     }
 
     private async Task UpdateCategory()
@@ -248,19 +254,15 @@ else
         isSubmitting = true;
         try
         {
-            if (editingCategory != null)
+            var result = await CompanyDataService.UpdateCategoryAsync(editRequest);
+            if (result != null)
             {
-                var result = await CategoryService.UpdateCategoryAsync(editingCategory.Id, editCategoryRequest);
-                if (result != null)
-                {
-                    showEditCategoryModal = false;
-                    await LoadCategories();
-                }
+                showEditModal = false;
+                await LoadCategories();
             }
         }
         catch (Exception ex)
         {
-            // Handle error
             Console.WriteLine($"Error updating category: {ex.Message}");
         }
         finally
@@ -271,23 +273,22 @@ else
 
     private async Task DeleteCategory(CategoryDto category)
     {
-        if (await js.InvokeAsync<bool>("confirm", $"¿Estás seguro de que deseas eliminar la categoría '{category.Name}'?"))
+        if (await JS.InvokeAsync<bool>("confirm", $"¿Estás seguro de eliminar la categoría '{category.Name}'?"))
         {
             try
             {
-                var success = await CategoryService.DeleteCategoryAsync(category.Id);
+                var success = await CompanyDataService.DeleteCategoryAsync(category.Id);
                 if (success)
                 {
                     await LoadCategories();
                 }
                 else
                 {
-                    await js.InvokeAsync<string>("alert", "No se puede eliminar la categoría porque tiene productos asociados.");
+                    await JS.InvokeAsync<string>("alert", "No se puede eliminar la categoría porque tiene productos asociados.");
                 }
             }
             catch (Exception ex)
             {
-                // Handle error
                 Console.WriteLine($"Error deleting category: {ex.Message}");
             }
         }

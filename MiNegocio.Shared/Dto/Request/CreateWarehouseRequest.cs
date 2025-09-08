@@ -18,5 +18,7 @@ namespace MiNegocio.Shared.Dto.Request
 
         [StringLength(200, ErrorMessage = "La dirección no puede exceder los 200 caracteres")]
         public string Address { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; } = true;
     }
 }

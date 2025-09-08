@@ -19,5 +19,7 @@ namespace MiNegocio.Shared.Dto.Request
 
         [StringLength(200, ErrorMessage = "La descripción no puede exceder los 200 caracteres")]
         public string Description { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; } = true;
     }
 }

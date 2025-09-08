@@ -1,16 +1,16 @@
 ﻿@page "/company-dashboard/units-of-measure"
-@using MiNegocio.Client.Shared.Services
+@using MiNegocio.Client.Shared.Interfaces
 @using MiNegocio.Shared.Dto.Request
 @using MiNegocio.Shared.Dto.Response
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "SystemUser")]
-@inject IUnitOfMeasureManagementService UnitOfMeasureService
-@inject CustomAuthStateProvider AuthStateProvider
+@inject ICompanyDataService CompanyDataService
+@inject IJSRuntime JS
 
 <h3>Gestión de Unidades de Medida</h3>
 
 <div class="mb-3">
-    <button class="btn btn-primary" @onclick="ShowCreateUnitModal">Agregar Unidad de Medida</button>
+    <button class="btn btn-primary" @onclick="ShowCreateModal">Nueva Unidad</button>
 </div>
 
 @if (units == null)
@@ -25,7 +25,7 @@
 else if (!units.Any())
 {
     <div class="alert alert-info">
-        No hay unidades de medida registradas. Agrega tu primera unidad de medida para empezar.
+        No hay unidades de medida registradas. Crea tu primera unidad para comenzar.
     </div>
 }
 else
@@ -35,8 +35,8 @@ else
             <thead class="table-dark">
                 <tr>
                     <th>Nombre</th>
-                    <th>Abreviatura</th>
-                    <th>Descripción</th>
+                    <th>Código</th>
+                    <th>Símbolo</th>
                     <th>Estado</th>
                     <th>Productos</th>
                     <th>Acciones</th>
@@ -47,23 +47,25 @@ else
                 {
                     <tr>
                         <td>@unit.Name</td>
-                        <td><span class="badge bg-secondary">@unit.Abbreviation</span></td>
+                        <td>@unit.Abbreviation</td>
                         <td>@unit.Description</td>
                         <td>
-                            <span class="badge @(unit.IsActive ? "bg-success" : "bg-secondary")">
-                                @(unit.IsActive ? "Activa" : "Inactiva")
-                            </span>
+                            @if (unit.IsActive)
+                            {
+                                <span class="badge bg-success">Activa</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactiva</span>
+                            }
                         </td>
-                        <td>
-                            <span class="badge bg-primary">@unit.ProductCount</span>
-                        </td>
+                        <td>@unit.ProductCount</td>
                         <td>
                             <div class="btn-group" role="group">
                                 <button class="btn btn-sm btn-outline-primary" @onclick="() => EditUnit(unit)" title="Editar">
                                     <span class="oi oi-pencil"></span>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUnit(unit)" title="Eliminar"
-                                        disabled="@(unit.ProductCount > 0)">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUnit(unit)" title="Eliminar" disabled="@unit.ProductCount > 0">
                                     <span class="oi oi-trash"></span>
                                 </button>
                             </div>
@@ -75,37 +77,42 @@ else
     </div>
 }
 
-<!-- Create Unit Modal -->
-@if (showCreateUnitModal)
+<!-- Create Modal -->
+@if (showCreateModal)
 {
     <div class="modal d-block show" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Agregar Nueva Unidad de Medida</h5>
-                    <button type="button" class="btn-close" @onclick="HideCreateUnitModal"></button>
+                    <h5 class="modal-title">Nueva Unidad de Medida</h5>
+                    <button type="button" class="btn-close" @onclick="HideCreateModal"></button>
                 </div>
                 <div class="modal-body">
-                    <EditForm Model="@newUnit" OnValidSubmit="@CreateUnit">
+                    <EditForm Model="@createRequest" OnValidSubmit="@CreateUnit">
                         <DataAnnotationsValidator />
                         <ValidationSummary class="text-danger" />
 
                         <div class="mb-3">
-                            <label for="unit-name" class="form-label">Nombre:</label>
-                            <InputText id="unit-name" class="form-control" @bind-Value="newUnit.Name" />
-                            <ValidationMessage For="@(() => newUnit.Name)" class="text-danger" />
+                            <label class="form-label">Nombre:</label>
+                            <InputText class="form-control" @bind-Value="createRequest.Name" />
+                            <ValidationMessage For="@(() => createRequest.Name)" class="text-danger" />
                         </div>
 
                         <div class="mb-3">
-                            <label for="unit-abbreviation" class="form-label">Abreviatura:</label>
-                            <InputText id="unit-abbreviation" class="form-control" @bind-Value="newUnit.Abbreviation" />
-                            <ValidationMessage For="@(() => newUnit.Abbreviation)" class="text-danger" />
+                            <label class="form-label">Código:</label>
+                            <InputText class="form-control" @bind-Value="createRequest.Description" />
+                            <ValidationMessage For="@(() => createRequest.Description)" class="text-danger" />
                         </div>
 
                         <div class="mb-3">
-                            <label for="unit-description" class="form-label">Descripción:</label>
-                            <TextArea id="unit-description" class="form-control" @bind-Value="newUnit.Description" rows="3" />
-                            <ValidationMessage For="@(() => newUnit.Description)" class="text-danger" />
+                            <label class="form-label">Símbolo:</label>
+                            <InputText class="form-control" @bind-Value="createRequest.Abbreviation" />
+                            <ValidationMessage For="@(() => createRequest.Abbreviation)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="createRequest.IsActive" />
+                            <label class="form-check-label">Activa</label>
                         </div>
 
                         <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
@@ -126,37 +133,42 @@ else
     </div>
 }
 
-<!-- Edit Unit Modal -->
-@if (showEditUnitModal && editingUnit != null)
+<!-- Edit Modal -->
+@if (showEditModal && editingUnit != null)
 {
     <div class="modal d-block show" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Editar Unidad de Medida</h5>
-                    <button type="button" class="btn-close" @onclick="HideEditUnitModal"></button>
+                    <button type="button" class="btn-close" @onclick="HideEditModal"></button>
                 </div>
                 <div class="modal-body">
-                    <EditForm Model="@editUnitRequest" OnValidSubmit="@UpdateUnit">
+                    <EditForm Model="@editRequest" OnValidSubmit="@UpdateUnit">
                         <DataAnnotationsValidator />
                         <ValidationSummary class="text-danger" />
 
                         <div class="mb-3">
-                            <label for="edit-unit-name" class="form-label">Nombre:</label>
-                            <InputText id="edit-unit-name" class="form-control" @bind-Value="editUnitRequest.Name" />
-                            <ValidationMessage For="@(() => editUnitRequest.Name)" class="text-danger" />
+                            <label class="form-label">Nombre:</label>
+                            <InputText class="form-control" @bind-Value="editRequest.Name" />
+                            <ValidationMessage For="@(() => editRequest.Name)" class="text-danger" />
                         </div>
 
                         <div class="mb-3">
-                            <label for="edit-unit-abbreviation" class="form-label">Abreviatura:</label>
-                            <InputText id="edit-unit-abbreviation" class="form-control" @bind-Value="editUnitRequest.Abbreviation" />
-                            <ValidationMessage For="@(() => editUnitRequest.Abbreviation)" class="text-danger" />
+                            <label class="form-label">Código:</label>
+                            <InputText class="form-control" @bind-Value="editRequest.Code" />
+                            <ValidationMessage For="@(() => editRequest.Code)" class="text-danger" />
                         </div>
 
                         <div class="mb-3">
-                            <label for="edit-unit-description" class="form-label">Descripción:</label>
-                            <TextArea id="edit-unit-description" class="form-control" @bind-Value="editUnitRequest.Description" rows="3" />
-                            <ValidationMessage For="@(() => editUnitRequest.Description)" class="text-danger" />
+                            <label class="form-label">Símbolo:</label>
+                            <InputText class="form-control" @bind-Value="editRequest.Symbol" />
+                            <ValidationMessage For="@(() => editRequest.Symbol)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="editRequest.IsActive" />
+                            <label class="form-check-label">Activa</label>
                         </div>
 
                         <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
@@ -179,12 +191,12 @@ else
 
 @code {
     private List<UnitOfMeasureDto> units = new();
-    private bool showCreateUnitModal = false;
-    private bool showEditUnitModal = false;
+    private bool showCreateModal = false;
+    private bool showEditModal = false;
     private bool isSubmitting = false;
-    private CreateUnitOfMeasureRequest newUnit = new();
+    private CreateUnitOfMeasureRequest createRequest = new();
     private UnitOfMeasureDto? editingUnit;
-    private CreateUnitOfMeasureRequest editUnitRequest = new();
+    private UpdateUnitOfMeasureRequest editRequest = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -195,28 +207,23 @@ else
     {
         try
         {
-            var companyId = await AuthStateProvider.GetCompanyIdAsync();
-            if (companyId.HasValue)
-            {
-                units = await UnitOfMeasureService.GetUnitsOfMeasureByCompanyAsync(companyId.Value);
-            }
+            units = await CompanyDataService.GetUnitsOfMeasureAsync();
         }
         catch (Exception ex)
         {
-            // Handle error
-            Console.WriteLine($"Error loading units of measure: {ex.Message}");
+            Console.WriteLine($"Error loading units: {ex.Message}");
         }
     }
 
-    private void ShowCreateUnitModal()
+    private void ShowCreateModal()
     {
-        newUnit = new CreateUnitOfMeasureRequest();
-        showCreateUnitModal = true;
+        createRequest = new CreateUnitOfMeasureRequest();
+        showCreateModal = true;
     }
 
-    private void HideCreateUnitModal()
+    private void HideCreateModal()
     {
-        showCreateUnitModal = false;
+        showCreateModal = false;
     }
 
     private async Task CreateUnit()
@@ -224,17 +231,13 @@ else
         isSubmitting = true;
         try
         {
-            var result = await UnitOfMeasureService.CreateUnitOfMeasureAsync(newUnit, 1); // TODO: Get company ID
-            if (result != null)
-            {
-                showCreateUnitModal = false;
-                await LoadUnits();
-            }
+            var result = await CompanyDataService.CreateUnitOfMeasureAsync(createRequest);
+            showCreateModal = false;
+            await LoadUnits();
         }
         catch (Exception ex)
         {
-            // Handle error
-            Console.WriteLine($"Error creating unit of measure: {ex.Message}");
+            Console.WriteLine($"Error creating unit: {ex.Message}");
         }
         finally
         {
@@ -245,18 +248,20 @@ else
     private void EditUnit(UnitOfMeasureDto unit)
     {
         editingUnit = unit;
-        editUnitRequest = new CreateUnitOfMeasureRequest
+        editRequest = new UpdateUnitOfMeasureRequest
         {
+            Id = unit.Id,
             Name = unit.Name,
-            Abbreviation = unit.Abbreviation,
-            Description = unit.Description
+            Code = unit.Abbreviation,
+            Symbol = unit.Description,
+            IsActive = unit.IsActive
         };
-        showEditUnitModal = true;
+        showEditModal = true;
     }
 
-    private void HideEditUnitModal()
+    private void HideEditModal()
     {
-        showEditUnitModal = false;
+        showEditModal = false;
     }
 
     private async Task UpdateUnit()
@@ -264,20 +269,16 @@ else
         isSubmitting = true;
         try
         {
-            if (editingUnit != null)
+            var result = await CompanyDataService.UpdateUnitOfMeasureAsync(editRequest);
+            if (result != null)
             {
-                var result = await UnitOfMeasureService.UpdateUnitOfMeasureAsync(editingUnit.Id, editUnitRequest);
-                if (result != null)
-                {
-                    showEditUnitModal = false;
-                    await LoadUnits();
-                }
+                showEditModal = false;
+                await LoadUnits();
             }
         }
         catch (Exception ex)
         {
-            // Handle error
-            Console.WriteLine($"Error updating unit of measure: {ex.Message}");
+            Console.WriteLine($"Error updating unit: {ex.Message}");
         }
         finally
         {
@@ -287,24 +288,23 @@ else
 
     private async Task DeleteUnit(UnitOfMeasureDto unit)
     {
-        if (await js.InvokeAsync<bool>("confirm", $"¿Estás seguro de que deseas eliminar la unidad de medida '{unit.Name}'?"))
+        if (await JS.InvokeAsync<bool>("confirm", $"¿Estás seguro de eliminar la unidad '{unit.Name}'?"))
         {
             try
             {
-                var success = await UnitOfMeasureService.DeleteUnitOfMeasureAsync(unit.Id);
+                var success = await CompanyDataService.DeleteUnitOfMeasureAsync(unit.Id);
                 if (success)
                 {
                     await LoadUnits();
                 }
                 else
                 {
-                    await js.InvokeAsync<string>("alert", "No se puede eliminar la unidad de medida porque tiene productos asociados.");
+                    await JS.InvokeAsync<string>("alert", "No se puede eliminar la unidad de medida porque tiene productos asociados.");
                 }
             }
             catch (Exception ex)
             {
-                // Handle error
-                Console.WriteLine($"Error deleting unit of measure: {ex.Message}");
+                Console.WriteLine($"Error deleting unit: {ex.Message}");
             }
         }
     }

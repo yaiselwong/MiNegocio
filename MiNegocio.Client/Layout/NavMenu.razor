@@ -59,10 +59,25 @@
             </AuthorizeView>
             
             <AuthorizeView Roles="SystemUser">
-                <Authorized Context="dash">
+                <Authorized Context="user">
                     <div class="nav-item">
                         <NavLink class="nav-link" href="company-dashboard">
-                            <span class="oi oi-business" aria-hidden="true"></span> Company Dashboard
+                            <span class="oi oi-dashboard" aria-hidden="true"></span> Dashboard
+                        </NavLink>
+                    </div>
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="company-dashboard/warehouses">
+                            <span class="oi oi-home" aria-hidden="true"></span> Almacenes
+                        </NavLink>
+                    </div>
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="company-dashboard/categories">
+                            <span class="oi oi-tags" aria-hidden="true"></span> Categorías
+                        </NavLink>
+                    </div>
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="company-dashboard/units-of-measure">
+                            <span class="oi oi-ruler" aria-hidden="true"></span> Unidades
                         </NavLink>
                     </div>
                 </Authorized>
@@ -70,3 +85,5 @@
         </Authorized>
     </AuthorizeView>
 </nav>
+
+

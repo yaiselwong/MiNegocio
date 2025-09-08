@@ -4,15 +4,15 @@
 @using MiNegocio.Shared.Dto.Request
 @using MiNegocio.Shared.Dto.Response
 @using Microsoft.AspNetCore.Authorization
+
 @attribute [Authorize(Roles = "SystemUser")]
-@inject IWarehouseService WarehouseService
-@inject CustomAuthStateProvider AuthStateProvider
-@inject IJSRuntime js
+@inject ICompanyDataService CompanyDataService
+@inject IJSRuntime JS
 
 <h3>Gestión de Almacenes</h3>
 
 <div class="mb-3">
-    <button class="btn btn-primary" @onclick="ShowCreateWarehouseModal">Agregar Almacén</button>
+    <button class="btn btn-primary" @onclick="ShowCreateModal">Nuevo Almacén</button>
 </div>
 
 @if (warehouses == null)
@@ -27,7 +27,7 @@
 else if (!warehouses.Any())
 {
     <div class="alert alert-info">
-        No hay almacenes registrados. Agrega tu primer almacén para empezar.
+        No hay almacenes registrados. Crea tu primer almacén para comenzar.
     </div>
 }
 else
@@ -37,8 +37,8 @@ else
             <thead class="table-dark">
                 <tr>
                     <th>Nombre</th>
-                    <th>Dirección</th>
                     <th>Descripción</th>
+                    <th>Ubicación</th>
                     <th>Estado</th>
                     <th>Productos</th>
                     <th>Acciones</th>
@@ -49,23 +49,25 @@ else
                 {
                     <tr>
                         <td>@warehouse.Name</td>
-                        <td>@warehouse.Address</td>
                         <td>@warehouse.Description</td>
+                        <td>@warehouse.Address</td>
                         <td>
-                            <span class="badge @(warehouse.IsActive ? "bg-success" : "bg-secondary")">
-                                @(warehouse.IsActive ? "Activo" : "Inactivo")
-                            </span>
+                            @if (warehouse.IsActive)
+                            {
+                                <span class="badge bg-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactivo</span>
+                            }
                         </td>
-                        <td>
-                            <span class="badge bg-primary">@warehouse.ProductCount</span>
-                        </td>
+                        <td>@warehouse.ProductCount</td>
                         <td>
                             <div class="btn-group" role="group">
                                 <button class="btn btn-sm btn-outline-primary" @onclick="() => EditWarehouse(warehouse)" title="Editar">
                                     <span class="oi oi-pencil"></span>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteWarehouse(warehouse)" title="Eliminar"
-                                        disabled="@(warehouse.ProductCount > 0)">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteWarehouse(warehouse)" title="Eliminar" disabled="@warehouse.ProductCount > 0">
                                     <span class="oi oi-trash"></span>
                                 </button>
                             </div>
@@ -77,37 +79,42 @@ else
     </div>
 }
 
-<!-- Create Warehouse Modal -->
-@if (showCreateWarehouseModal)
+<!-- Create Modal -->
+@if (showCreateModal)
 {
     <div class="modal d-block show" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Agregar Nuevo Almacén</h5>
-                    <button type="button" class="btn-close" @onclick="HideCreateWarehouseModal"></button>
+                    <h5 class="modal-title">Nuevo Almacén</h5>
+                    <button type="button" class="btn-close" @onclick="HideCreateModal"></button>
                 </div>
                 <div class="modal-body">
-                    <EditForm Model="@newWarehouse" OnValidSubmit="@CreateWarehouse">
+                    <EditForm Model="@createRequest" OnValidSubmit="@CreateWarehouse">
                         <DataAnnotationsValidator />
                         <ValidationSummary class="text-danger" />
 
                         <div class="mb-3">
-                            <label for="warehouse-name" class="form-label">Nombre:</label>
-                            <InputText id="warehouse-name" class="form-control" @bind-Value="newWarehouse.Name" />
-                            <ValidationMessage For="@(() => newWarehouse.Name)" class="text-danger" />
+                            <label class="form-label">Nombre:</label>
+                            <InputText class="form-control" @bind-Value="createRequest.Name" />
+                            <ValidationMessage For="@(() => createRequest.Name)" class="text-danger" />
                         </div>
 
                         <div class="mb-3">
-                            <label for="warehouse-address" class="form-label">Dirección:</label>
-                            <InputText id="warehouse-address" class="form-control" @bind-Value="newWarehouse.Address" />
-                            <ValidationMessage For="@(() => newWarehouse.Address)" class="text-danger" />
+                            <label class="form-label">Descripción:</label>
+                            <InputTextArea class="form-control" @bind-Value="createRequest.Description" />
+                            <ValidationMessage For="@(() => createRequest.Description)" class="text-danger" />
                         </div>
 
                         <div class="mb-3">
-                            <label for="warehouse-description" class="form-label">Descripción:</label>
-                            <TextArea id="warehouse-description" class="form-control" @bind-Value="newWarehouse.Description" rows="3" />
-                            <ValidationMessage For="@(() => newWarehouse.Description)" class="text-danger" />
+                            <label class="form-label">Ubicación:</label>
+                            <InputText class="form-control" @bind-Value="createRequest.Address" />
+                            <ValidationMessage For="@(() => createRequest.Address)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="createRequest.IsActive" />
+                            <label class="form-check-label">Activo</label>
                         </div>
 
                         <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
@@ -128,37 +135,42 @@ else
     </div>
 }
 
-<!-- Edit Warehouse Modal -->
-@if (showEditWarehouseModal && editingWarehouse != null)
+<!-- Edit Modal -->
+@if (showEditModal && editingWarehouse != null)
 {
     <div class="modal d-block show" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Editar Almacén</h5>
-                    <button type="button" class="btn-close" @onclick="HideEditWarehouseModal"></button>
+                    <button type="button" class="btn-close" @onclick="HideEditModal"></button>
                 </div>
                 <div class="modal-body">
-                    <EditForm Model="@editWarehouseRequest" OnValidSubmit="@UpdateWarehouse">
+                    <EditForm Model="@editRequest" OnValidSubmit="@UpdateWarehouse">
                         <DataAnnotationsValidator />
                         <ValidationSummary class="text-danger" />
 
                         <div class="mb-3">
-                            <label for="edit-warehouse-name" class="form-label">Nombre:</label>
-                            <InputText id="edit-warehouse-name" class="form-control" @bind-Value="editWarehouseRequest.Name" />
-                            <ValidationMessage For="@(() => editWarehouseRequest.Name)" class="text-danger" />
+                            <label class="form-label">Nombre:</label>
+                            <InputText class="form-control" @bind-Value="editRequest.Name" />
+                            <ValidationMessage For="@(() => editRequest.Name)" class="text-danger" />
                         </div>
 
                         <div class="mb-3">
-                            <label for="edit-warehouse-address" class="form-label">Dirección:</label>
-                            <InputText id="edit-warehouse-address" class="form-control" @bind-Value="editWarehouseRequest.Address" />
-                            <ValidationMessage For="@(() => editWarehouseRequest.Address)" class="text-danger" />
+                            <label class="form-label">Descripción:</label>
+                            <InputTextArea class="form-control" @bind-Value="editRequest.Description" />
+                            <ValidationMessage For="@(() => editRequest.Description)" class="text-danger" />
                         </div>
 
                         <div class="mb-3">
-                            <label for="edit-warehouse-description" class="form-label">Descripción:</label>
-                            <TextArea id="edit-warehouse-description" class="form-control" @bind-Value="editWarehouseRequest.Description" rows="3" />
-                            <ValidationMessage For="@(() => editWarehouseRequest.Description)" class="text-danger" />
+                            <label class="form-label">Ubicación:</label>
+                            <InputText class="form-control" @bind-Value="editRequest.Address" />
+                            <ValidationMessage For="@(() => editRequest.Address)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="editRequest.IsActive" />
+                            <label class="form-check-label">Activo</label>
                         </div>
 
                         <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
@@ -181,12 +193,12 @@ else
 
 @code {
     private List<WarehouseDto> warehouses = new();
-    private bool showCreateWarehouseModal = false;
-    private bool showEditWarehouseModal = false;
+    private bool showCreateModal = false;
+    private bool showEditModal = false;
     private bool isSubmitting = false;
-    private CreateWarehouseRequest newWarehouse = new();
+    private CreateWarehouseRequest createRequest = new();
     private WarehouseDto? editingWarehouse;
-    private CreateWarehouseRequest editWarehouseRequest = new();
+    private UpdateWarehouseRequest editRequest = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -197,28 +209,23 @@ else
     {
         try
         {
-            var companyId = await AuthStateProvider.GetCompanyIdAsync();
-            if (companyId.HasValue)
-            {
-                warehouses = await WarehouseService.GetWarehousesByCompanyAsync(companyId.Value);
-            }
+            warehouses = await CompanyDataService.GetWarehousesAsync();
         }
         catch (Exception ex)
         {
-            // Handle error
             Console.WriteLine($"Error loading warehouses: {ex.Message}");
         }
     }
 
-    private void ShowCreateWarehouseModal()
+    private void ShowCreateModal()
     {
-        newWarehouse = new CreateWarehouseRequest();
-        showCreateWarehouseModal = true;
+        createRequest = new CreateWarehouseRequest();
+        showCreateModal = true;
     }
 
-    private void HideCreateWarehouseModal()
+    private void HideCreateModal()
     {
-        showCreateWarehouseModal = false;
+        showCreateModal = false;
     }
 
     private async Task CreateWarehouse()
@@ -226,16 +233,12 @@ else
         isSubmitting = true;
         try
         {
-            var result = await WarehouseService.CreateWarehouseAsync(newWarehouse); // TODO: Get company ID
-            if (result != null)
-            {
-                showCreateWarehouseModal = false;
-                await LoadWarehouses();
-            }
+            var result = await CompanyDataService.CreateWarehouseAsync(createRequest);
+            showCreateModal = false;
+            await LoadWarehouses();
         }
         catch (Exception ex)
         {
-            // Handle error
             Console.WriteLine($"Error creating warehouse: {ex.Message}");
         }
         finally
@@ -247,18 +250,20 @@ else
     private void EditWarehouse(WarehouseDto warehouse)
     {
         editingWarehouse = warehouse;
-        editWarehouseRequest = new CreateWarehouseRequest
+        editRequest = new UpdateWarehouseRequest
         {
+            Id = warehouse.Id,
             Name = warehouse.Name,
+            Description = warehouse.Description,
             Address = warehouse.Address,
-            Description = warehouse.Description
+            IsActive = warehouse.IsActive
         };
-        showEditWarehouseModal = true;
+        showEditModal = true;
     }
 
-    private void HideEditWarehouseModal()
+    private void HideEditModal()
     {
-        showEditWarehouseModal = false;
+        showEditModal = false;
     }
 
     private async Task UpdateWarehouse()
@@ -266,19 +271,15 @@ else
         isSubmitting = true;
         try
         {
-            if (editingWarehouse != null)
+            var result = await CompanyDataService.UpdateWarehouseAsync(editRequest);
+            if (result != null)
             {
-                var result = await WarehouseService.UpdateWarehouseAsync(editingWarehouse.Id, editWarehouseRequest);
-                if (result != null)
-                {
-                    showEditWarehouseModal = false;
-                    await LoadWarehouses();
-                }
+                showEditModal = false;
+                await LoadWarehouses();
             }
         }
         catch (Exception ex)
         {
-            // Handle error
             Console.WriteLine($"Error updating warehouse: {ex.Message}");
         }
         finally
@@ -289,23 +290,22 @@ else
 
     private async Task DeleteWarehouse(WarehouseDto warehouse)
     {
-        if (await js.InvokeAsync<bool>("confirm", $"¿Estás seguro de que deseas eliminar el almacén '{warehouse.Name}'?"))
+        if (await JS.InvokeAsync<bool>("confirm", $"¿Estás seguro de eliminar el almacén '{warehouse.Name}'?"))
         {
             try
             {
-                var success = await WarehouseService.DeleteWarehouseAsync(warehouse.Id);
+                var success = await CompanyDataService.DeleteWarehouseAsync(warehouse.Id);
                 if (success)
                 {
                     await LoadWarehouses();
                 }
                 else
                 {
-                    await js.InvokeAsync<string>("alert", "No se puede eliminar el almacén porque tiene productos asociados.");
+                    await JS.InvokeAsync<string>("alert", "No se puede eliminar el almacén porque tiene productos asociados.");
                 }
             }
             catch (Exception ex)
             {
-                // Handle error
                 Console.WriteLine($"Error deleting warehouse: {ex.Message}");
             }
         }
