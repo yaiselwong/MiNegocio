@@ -20,7 +20,7 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<CustomAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<CustomAuthStateProvider>());
-
+builder.Services.AddScoped<ICompanyDataService, CompanyDataService>();
 // Registrar HttpClient base
 builder.Services.AddScoped(sp => new HttpClient
 {

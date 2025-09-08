@@ -1,137 +1,113 @@
 ﻿@page "/company-dashboard"
 @using MiNegocio.Client.Shared.Interfaces
-@using MiNegocio.Client.Shared.Services
-@using MiNegocio.Shared.Models
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "SystemUser")]
-@inject CustomAuthStateProvider AuthStateProvider
-@inject IAdminService AdminService
+@inject ICompanyDataService CompanyDataService
 
-<h3>Company Dashboard</h3>
+<h3>Panel de Control de Empresa</h3>
 
-@if (company == null)
-{
-    <div class="text-center">
-        <div class="spinner-border" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <p>Loading company information...</p>
-    </div>
-}
-else
-{
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">@company.Name</h4>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Address:</strong> @company.Address</p>
-                            <p><strong>Phone:</strong> @company.Phone</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Email:</strong> @company.Email</p>
-                            <p><strong>Created:</strong> @company.CreatedAt.ToShortDateString()</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <h4>Total Users</h4>
-                    <p class="display-4">@companyUsers.Count</p>
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Almacenes</h5>
+                <p class="card-text">Gestiona los almacenes de tu empresa</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="display-4">@warehouseCount</span>
+                    <a href="/company-dashboard/warehouses" class="btn btn-light">Gestionar</a>
                 </div>
             </div>
         </div>
     </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h4 class="mb-0">Company Users</h4>
-        </div>
-        <div class="card-body">
-            @if (companyUsers == null)
-            {
-                <div class="text-center">
-                    <div class="spinner-border" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p>Loading users...</p>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Categorías</h5>
+                <p class="card-text">Organiza tus productos por categorías</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="display-4">@categoryCount</span>
+                    <a href="/company-dashboard/categories" class="btn btn-light">Gestionar</a>
                 </div>
-            }
-            else if (!companyUsers.Any())
-            {
-                <div class="alert alert-info">
-                    No users found for this company.
-                </div>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Joined</th>
-                                <th>Last Login</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var user in companyUsers)
-                            {
-                                <tr>
-                                    <td>@user.Username</td>
-                                    <td>@user.Email</td>
-                                    <td>
-                                        <span class="badge @(user.Role == UserRole.Admin ? "bg-danger" : "bg-primary")">
-                                            @user.Role
-                                        </span>
-                                    </td>
-                                    <td>@user.CreatedAt.ToShortDateString()</td>
-                                    <td>@(user.LastLoginAt?.ToShortDateString() ?? "Never")</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
+            </div>
         </div>
     </div>
-}
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Unidades de Medida</h5>
+                <p class="card-text">Configura las unidades para tus productos</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="display-4">@unitCount</span>
+                    <a href="/company-dashboard/units-of-measure" class="btn btn-light">Gestionar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Resumen de Actividad</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Elementos Activos</h6>
+                <ul class="list-unstyled">
+                    <li>Almacenes activos: <span class="badge bg-success">@activeWarehouses</span></li>
+                    <li>Categorías activas: <span class="badge bg-success">@activeCategories</span></li>
+                    <li>Unidades activas: <span class="badge bg-success">@activeUnits</span></li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6>Elementos Inactivos</h6>
+                <ul class="list-unstyled">
+                    <li>Almacenes inactivos: <span class="badge bg-secondary">@inactiveWarehouses</span></li>
+                    <li>Categorías inactivas: <span class="badge bg-secondary">@inactiveCategories</span></li>
+                    <li>Unidades inactivas: <span class="badge bg-secondary">@inactiveUnits</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
-    private Company? company;
-    private List<User> companyUsers = new();
+    private int warehouseCount = 0;
+    private int categoryCount = 0;
+    private int unitCount = 0;
+    private int activeWarehouses = 0;
+    private int activeCategories = 0;
+    private int activeUnits = 0;
+    private int inactiveWarehouses = 0;
+    private int inactiveCategories = 0;
+    private int inactiveUnits = 0;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadCompanyData();
+        await LoadDashboardData();
     }
 
-    private async Task LoadCompanyData()
+    private async Task LoadDashboardData()
     {
         try
         {
-            var companyId = await AuthStateProvider.GetCompanyIdAsync();
-            if (companyId.HasValue)
-            {
-                company = await AdminService.GetCompanyAsync(companyId.Value);
-                if (company != null)
-                {
-                    companyUsers = await AdminService.GetUsersByCompanyAsync(companyId.Value);
-                }
-            }
+            var warehouses = await CompanyDataService.GetWarehousesAsync();
+            var categories = await CompanyDataService.GetCategoriesAsync();
+            var units = await CompanyDataService.GetUnitsOfMeasureAsync();
+
+            warehouseCount = warehouses.Count;
+            categoryCount = categories.Count;
+            unitCount = units.Count;
+
+            activeWarehouses = warehouses.Count(w => w.IsActive);
+            activeCategories = categories.Count(c => c.IsActive);
+            activeUnits = units.Count(u => u.IsActive);
+
+            inactiveWarehouses = warehouseCount - activeWarehouses;
+            inactiveCategories = categoryCount - activeCategories;
+            inactiveUnits = unitCount - activeUnits;
         }
         catch (Exception ex)
         {
-            // Handle error
+            Console.WriteLine($"Error loading dashboard data: {ex.Message}");
         }
     }
 }

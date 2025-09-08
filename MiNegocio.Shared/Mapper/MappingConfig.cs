@@ -63,6 +63,44 @@ namespace MiNegocio.Shared.Mapper
                 .Ignore(dest => dest.Id)
                 .Ignore(dest => dest.CreatedAt)
                 .Ignore(dest => dest.UpdatedAt);
+
+            // Warehouse mappings
+            TypeAdapterConfig<Warehouse, WarehouseDto>
+                .NewConfig()
+                .Map(dest => dest.ProductCount, src => src.Products != null ? src.Products.Count : 0);
+
+            TypeAdapterConfig<CreateWarehouseRequest, Warehouse>
+                .NewConfig()
+                .Ignore(dest => dest.Id)
+                .Ignore(dest => dest.CreatedAt)
+                .Ignore(dest => dest.UpdatedAt)
+                .Ignore(dest => dest.IsActive)
+                .Ignore(dest => dest.CompanyId);
+            // Category mappings
+            TypeAdapterConfig<Category, CategoryDto>
+                .NewConfig()
+                .Map(dest => dest.ProductCount, src => src.Products != null ? src.Products.Count : 0);
+
+            TypeAdapterConfig<CreateCategoryRequest, Category>
+                .NewConfig()
+                .Ignore(dest => dest.Id)
+                .Ignore(dest => dest.CreatedAt)
+                .Ignore(dest => dest.UpdatedAt)
+                .Ignore(dest => dest.IsActive)
+                .Ignore(dest => dest.CompanyId);
+
+            // UnitOfMeasure mappings
+            TypeAdapterConfig<UnitOfMeasure, UnitOfMeasureDto>
+                .NewConfig()
+                .Map(dest => dest.ProductCount, src => src.Products != null ? src.Products.Count : 0);
+
+            TypeAdapterConfig<CreateUnitOfMeasureRequest, UnitOfMeasure>
+                .NewConfig()
+                .Ignore(dest => dest.Id)
+                .Ignore(dest => dest.CreatedAt)
+                .Ignore(dest => dest.UpdatedAt)
+                .Ignore(dest => dest.IsActive)
+                .Ignore(dest => dest.CompanyId);
         }
     }
 }

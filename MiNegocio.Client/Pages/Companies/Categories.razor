@@ -1,0 +1,296 @@
+﻿@page "/company-dashboard/categories"
+@using MiNegocio.Client.Shared.Interfaces
+@using MiNegocio.Shared.Dto.Request
+@using MiNegocio.Shared.Dto.Response
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "SystemUser")]
+@inject ICompanyDataService CompanyDataService
+@inject IJSRuntime JS
+
+<h3>Gestión de Categorías</h3>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="ShowCreateModal">Nueva Categoría</button>
+</div>
+
+@if (categories == null)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p>Cargando categorías...</p>
+    </div>
+}
+else if (!categories.Any())
+{
+    <div class="alert alert-info">
+        No hay categorías registradas. Crea tu primera categoría para comenzar.
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Estado</th>
+                    <th>Productos</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var category in categories)
+                {
+                    <tr>
+                        <td>@category.Name</td>
+                        <td>@category.Description</td>
+                        <td>
+                            @if (category.IsActive)
+                            {
+                                <span class="badge bg-success">Activa</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactiva</span>
+                            }
+                        </td>
+                        <td>@category.ProductCount</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => EditCategory(category)" title="Editar">
+                                    <span class="oi oi-pencil"></span>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCategory(category)" title="Eliminar" disabled="@category.ProductCount > 0">
+                                    <span class="oi oi-trash"></span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<!-- Create Modal -->
+@if (showCreateModal)
+{
+    <div class="modal d-block show" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nueva Categoría</h5>
+                    <button type="button" class="btn-close" @onclick="HideCreateModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@createRequest" OnValidSubmit="@CreateCategory">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Nombre:</label>
+                            <InputText class="form-control" @bind-Value="createRequest.Name" />
+                            <ValidationMessage For="@(() => createRequest.Name)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Descripción:</label>
+                            <InputTextArea class="form-control" @bind-Value="createRequest.Description" />
+                            <ValidationMessage For="@(() => createRequest.Description)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="createRequest.IsActive" />
+                            <label class="form-check-label">Activa</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                            @if (isSubmitting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Guardando...</span>
+                            }
+                            else
+                            {
+                                <span>Guardar</span>
+                            }
+                        </button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Edit Modal -->
+@if (showEditModal && editingCategory != null)
+{
+    <div class="modal d-block show" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Categoría</h5>
+                    <button type="button" class="btn-close" @onclick="HideEditModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@editRequest" OnValidSubmit="@UpdateCategory">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Nombre:</label>
+                            <InputText class="form-control" @bind-Value="editRequest.Name" />
+                            <ValidationMessage For="@(() => editRequest.Name)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Descripción:</label>
+                            <InputTextArea class="form-control" @bind-Value="editRequest.Description" />
+                            <ValidationMessage For="@(() => editRequest.Description)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="editRequest.IsActive" />
+                            <label class="form-check-label">Activa</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                            @if (isSubmitting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Actualizando...</span>
+                            }
+                            else
+                            {
+                                <span>Actualizar</span>
+                            }
+                        </button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<CategoryDto> categories = new();
+    private bool showCreateModal = false;
+    private bool showEditModal = false;
+    private bool isSubmitting = false;
+    private CreateCategoryRequest createRequest = new();
+    private CategoryDto? editingCategory;
+    private UpdateCategoryRequest editRequest = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            categories = await CompanyDataService.GetCategoriesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading categories: {ex.Message}");
+        }
+    }
+
+    private void ShowCreateModal()
+    {
+        createRequest = new CreateCategoryRequest();
+        showCreateModal = true;
+    }
+
+    private void HideCreateModal()
+    {
+        showCreateModal = false;
+    }
+
+    private async Task CreateCategory()
+    {
+        isSubmitting = true;
+        try
+        {
+            var result = await CompanyDataService.CreateCategoryAsync(createRequest);
+            showCreateModal = false;
+            await LoadCategories();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating category: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void EditCategory(CategoryDto category)
+    {
+        editingCategory = category;
+        editRequest = new UpdateCategoryRequest
+        {
+            Id = category.Id,
+            Name = category.Name,
+            Description = category.Description,
+            IsActive = category.IsActive
+        };
+        showEditModal = true;
+    }
+
+    private void HideEditModal()
+    {
+        showEditModal = false;
+    }
+
+    private async Task UpdateCategory()
+    {
+        isSubmitting = true;
+        try
+        {
+            var result = await CompanyDataService.UpdateCategoryAsync(editRequest);
+            if (result != null)
+            {
+                showEditModal = false;
+                await LoadCategories();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating category: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task DeleteCategory(CategoryDto category)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"¿Estás seguro de eliminar la categoría '{category.Name}'?"))
+        {
+            try
+            {
+                var success = await CompanyDataService.DeleteCategoryAsync(category.Id);
+                if (success)
+                {
+                    await LoadCategories();
+                }
+                else
+                {
+                    await JS.InvokeAsync<string>("alert", "No se puede eliminar la categoría porque tiene productos asociados.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting category: {ex.Message}");
+            }
+        }
+    }
+}

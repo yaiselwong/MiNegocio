@@ -17,6 +17,11 @@ namespace MiNegocio.Shared.Data
 
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<Company> Companies { get; set; } = null!;
+
+        public DbSet<Warehouse> Warehouses { get; set; } = null!;
+        public DbSet<Category> Categories { get; set; } = null!;
+        public DbSet<UnitOfMeasure> UnitsOfMeasure { get; set; } = null!;
+        public DbSet<Product> Products { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
 
@@ -43,6 +48,82 @@ namespace MiNegocio.Shared.Data
                 entity.Property(e => e.Email).HasMaxLength(100);
                 entity.Property(e => e.Phone).HasMaxLength(20);
                 entity.Property(e => e.CreatedAt).IsRequired();
+            });
+
+            // Warehouse configuration
+            modelBuilder.Entity<Warehouse>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.Address).HasMaxLength(200);
+                entity.Property(e => e.CreatedAt).IsRequired();
+
+                entity.HasOne(e => e.Company)
+                    .WithMany(c => c.Warehouses)
+                    .HasForeignKey(e => e.CompanyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Category configuration
+            modelBuilder.Entity<Category>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.CreatedAt).IsRequired();
+
+                entity.HasOne(e => e.Company)
+                    .WithMany(c => c.Categories)
+                    .HasForeignKey(e => e.CompanyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // UnitOfMeasure configuration
+            modelBuilder.Entity<UnitOfMeasure>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Abbreviation).IsRequired().HasMaxLength(10);
+                entity.Property(e => e.Description).HasMaxLength(200);
+                entity.Property(e => e.CreatedAt).IsRequired();
+
+                entity.HasOne(e => e.Company)
+                    .WithMany(c => c.UnitsOfMeasure)
+                    .HasForeignKey(e => e.CompanyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Product configuration
+            modelBuilder.Entity<Product>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.Code).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Price).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Stock).IsRequired();
+                entity.Property(e => e.CreatedAt).IsRequired();
+
+                entity.HasOne(e => e.Company)
+                    .WithMany(c => c.Products)
+                    .HasForeignKey(e => e.CompanyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Warehouse)
+                    .WithMany(w => w.Products)
+                    .HasForeignKey(e => e.WarehouseId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Category)
+                    .WithMany(c => c.Products)
+                    .HasForeignKey(e => e.CategoryId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.UnitOfMeasure)
+                    .WithMany(u => u.Products)
+                    .HasForeignKey(e => e.UnitOfMeasureId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

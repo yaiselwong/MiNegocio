@@ -19,11 +19,21 @@ namespace MiNegocio.Shared.Data.UoW
             UserRepository = UserRepository ?? new GenericRepository<User>(dbContext);
             CompanyRepository = CompanyRepository ?? new GenericRepository<Company>(dbContext);
 
+            WarehouseRepository = new GenericRepository<Warehouse>(dbContext);
+            CategoryRepository = new GenericRepository<Category>(dbContext);
+            UnitOfMeasureRepository = new GenericRepository<UnitOfMeasure>(dbContext);
+            ProductRepository = new GenericRepository<Product>(dbContext);
+
         }
 
 
         public IGenericRepository<User> UserRepository { get; set; }
         public IGenericRepository<Company> CompanyRepository { get; set; }
+
+        public IGenericRepository<Warehouse> WarehouseRepository { get; set; }
+        public IGenericRepository<Category> CategoryRepository { get; set; }
+        public IGenericRepository<UnitOfMeasure> UnitOfMeasureRepository { get; set; }
+        public IGenericRepository<Product> ProductRepository { get; set; }
 
         public async Task<int> CommitAsync()
         {
