@@ -21,13 +21,17 @@
 @inject NavigationManager NavigationManager
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
+    <AuthorizeView>
+        <Authorized>
+            <div class="sidebar">
+                <NavMenu />
+            </div>
+        </Authorized>
+    </AuthorizeView>
     <main>
         <div class="top-row px-4">
             <AuthorizeView>
+
                 <Authorized>
                     <div class="d-flex align-items-center">
                         <span class="me-3">Welcome, @context.User.Identity!.Name!</span>

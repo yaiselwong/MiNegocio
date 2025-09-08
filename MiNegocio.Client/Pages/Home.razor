@@ -14,7 +14,7 @@ Welcome to your new app. *@
 <AuthorizeView>
     <Authorized>
         <div class="text-center">
-            <h1>Welcome to BlazorAuthApp!</h1>
+            <h1>Welcome to Mi Negocio!</h1>
             
             <AuthorizeView Roles="Admin">
                 <Authorized Context="dash">
@@ -29,7 +29,7 @@ Welcome to your new app. *@
             <AuthorizeView Roles="SystemUser">
                 <Authorized Context="admin">
                     <div class="alert alert-success">
-                        <h4>Company Dashboard</h4>
+                        <h4>Negocio Dashboard</h4>
                         <p>You can view your company information.</p>
                         <a href="/company-dashboard" class="btn btn-primary">Go to Company Dashboard</a>
                     </div>
@@ -39,7 +39,7 @@ Welcome to your new app. *@
     </Authorized>
     <NotAuthorized>
         <div class="text-center">
-            <h1>Welcome to BlazorAuthApp!</h1>
+            <h1>Welcome to Mi Negocio!</h1>
             <p class="lead">Please login or register to access the application.</p>
             <div class="d-flex justify-content-center gap-3">
                 <a href="/login" class="btn btn-primary">Login</a>
