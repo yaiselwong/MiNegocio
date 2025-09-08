@@ -7,11 +7,11 @@ using MiNegocio.Shared.Models;
 
 namespace MiNegocio.Server.Services
 {
-    public class CategoryManagementService : ICategoryManagementService
+    public class CategoryService : ICategoryService
     {
         private readonly IUnitOfWork _unitOfWork;
 
-        public CategoryManagementService(IUnitOfWork unitOfWork)
+        public CategoryService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
         }
@@ -43,8 +43,7 @@ namespace MiNegocio.Server.Services
                 .Include(c => c.Products)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
-            if (category == null)
-                return null;
+            if (category == null) return null;
 
             return new CategoryDto
             {
@@ -65,32 +64,31 @@ namespace MiNegocio.Server.Services
             {
                 Name = request.Name,
                 Description = request.Description,
+                IsActive = request.IsActive,
                 CompanyId = companyId,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true
+                CreatedAt = DateTime.UtcNow
             };
 
             await _unitOfWork.CategoryRepository.Add(category);
             await _unitOfWork.CommitAsync();
 
-            return await GetCategoryByIdAsync(category.Id) ?? throw new Exception("Error creating category");
+            return await GetCategoryByIdAsync(category.Id) ?? throw new Exception("Error al crear la categoría");
         }
 
-        public async Task<CategoryDto?> UpdateCategoryAsync(int id, CreateCategoryRequest request)
+        public async Task<CategoryDto?> UpdateCategoryAsync(UpdateCategoryRequest request)
         {
-            var category = await _unitOfWork.CategoryRepository.FindOneAsync(c => c.Id == id);
-
-            if (category == null)
-                return null;
+            var category = await _unitOfWork.CategoryRepository.FindOneAsync(c => c.Id == request.Id);
+            if (category == null) return null;
 
             category.Name = request.Name;
             category.Description = request.Description;
+            category.IsActive = request.IsActive;
             category.UpdatedAt = DateTime.UtcNow;
 
             _unitOfWork.CategoryRepository.Update(category);
             await _unitOfWork.CommitAsync();
 
-            return await GetCategoryByIdAsync(id);
+            return await GetCategoryByIdAsync(category.Id);
         }
 
         public async Task<bool> DeleteCategoryAsync(int id)
@@ -99,13 +97,12 @@ namespace MiNegocio.Server.Services
                 .Include(c => c.Products)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
-            if (category == null)
-                return false;
+            if (category == null) return false;
 
-            // Verificar si tiene productos asociados
+            // Verificar si hay productos asociados
             if (category.Products.Any())
             {
-                return false; // No se puede eliminar si tiene productos
+                return false;
             }
 
              _unitOfWork.CategoryRepository.Delete(category);

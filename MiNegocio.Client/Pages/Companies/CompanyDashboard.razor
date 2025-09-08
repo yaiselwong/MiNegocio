@@ -1,8 +1,8 @@
 ﻿@page "/company-dashboard"
-@using MiNegocio.Client.Shared.Interfaces
-@using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "SystemUser")]
-@inject ICompanyDataService CompanyDataService
+@inject IWarehouseService WarehouseService
+@inject ICategoryService CategoryService
+@inject IUnitOfMeasureService UnitOfMeasureService
 
 <h3>Panel de Control de Empresa</h3>
 
@@ -32,38 +32,42 @@
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card bg-info text-white">
+        <div class="card bg-warning text-dark">
             <div class="card-body">
                 <h5 class="card-title">Unidades de Medida</h5>
                 <p class="card-text">Configura las unidades para tus productos</p>
                 <div class="d-flex justify-content-between align-items-center">
-                    <span class="display-4">@unitCount</span>
-                    <a href="/company-dashboard/units-of-measure" class="btn btn-light">Gestionar</a>
+                    <span class="display-4">@unitOfMeasureCount</span>
+                    <a href="/company-dashboard/unitofmeasures" class="btn btn-light">Gestionar</a>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        <h5 class="card-title">Resumen de Actividad</h5>
-        <div class="row">
-            <div class="col-md-6">
-                <h6>Elementos Activos</h6>
-                <ul class="list-unstyled">
-                    <li>Almacenes activos: <span class="badge bg-success">@activeWarehouses</span></li>
-                    <li>Categorías activas: <span class="badge bg-success">@activeCategories</span></li>
-                    <li>Unidades activas: <span class="badge bg-success">@activeUnits</span></li>
-                </ul>
-            </div>
-            <div class="col-md-6">
-                <h6>Elementos Inactivos</h6>
-                <ul class="list-unstyled">
-                    <li>Almacenes inactivos: <span class="badge bg-secondary">@inactiveWarehouses</span></li>
-                    <li>Categorías inactivas: <span class="badge bg-secondary">@inactiveCategories</span></li>
-                    <li>Unidades inactivas: <span class="badge bg-secondary">@inactiveUnits</span></li>
-                </ul>
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Resumen de Actividad</h5>
+                <div class="row">
+                    <div class="col-3">
+                        <h6>Almacenes Activos</h6>
+                        <span class="badge bg-primary">@activeWarehouses</span>
+                    </div>
+                    <div class="col-3">
+                        <h6>Categorías Activas</h6>
+                        <span class="badge bg-success">@activeCategories</span>
+                    </div>
+                    <div class="col-3">
+                        <h6>Unidades Activas</h6>
+                        <span class="badge bg-warning">@activeUnitOfMeasures</span>
+                    </div>
+                    <div class="col-3">
+                        <h6>Total Elementos</h6>
+                        <span class="badge bg-info">@totalElements</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -72,13 +76,11 @@
 @code {
     private int warehouseCount = 0;
     private int categoryCount = 0;
-    private int unitCount = 0;
+    private int unitOfMeasureCount = 0;
     private int activeWarehouses = 0;
     private int activeCategories = 0;
-    private int activeUnits = 0;
-    private int inactiveWarehouses = 0;
-    private int inactiveCategories = 0;
-    private int inactiveUnits = 0;
+    private int activeUnitOfMeasures = 0;
+    private int totalElements = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -89,21 +91,17 @@
     {
         try
         {
-            var warehouses = await CompanyDataService.GetWarehousesAsync();
-            var categories = await CompanyDataService.GetCategoriesAsync();
-            var units = await CompanyDataService.GetUnitsOfMeasureAsync();
+            var warehouses = await WarehouseService.GetWarehousesAsync();
+            var categories = await CategoryService.GetCategoriesAsync();
+            var unitOfMeasures = await UnitOfMeasureService.GetUnitOfMeasuresAsync();
 
             warehouseCount = warehouses.Count;
             categoryCount = categories.Count;
-            unitCount = units.Count;
-
+            unitOfMeasureCount = unitOfMeasures.Count;
             activeWarehouses = warehouses.Count(w => w.IsActive);
             activeCategories = categories.Count(c => c.IsActive);
-            activeUnits = units.Count(u => u.IsActive);
-
-            inactiveWarehouses = warehouseCount - activeWarehouses;
-            inactiveCategories = categoryCount - activeCategories;
-            inactiveUnits = unitCount - activeUnits;
+            activeUnitOfMeasures = unitOfMeasures.Count(u => u.IsActive);
+            totalElements = warehouseCount + categoryCount + unitOfMeasureCount;
         }
         catch (Exception ex)
         {

@@ -4,7 +4,7 @@
 @using MiNegocio.Shared.Dto.Response
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "SystemUser")]
-@inject ICompanyDataService CompanyDataService
+@inject ICategoryService CategoryService
 @inject IJSRuntime JS
 
 <h3>Gestión de Categorías</h3>
@@ -193,7 +193,7 @@ else
     {
         try
         {
-            categories = await CompanyDataService.GetCategoriesAsync();
+            categories = await CategoryService.GetCategoriesAsync();
         }
         catch (Exception ex)
         {
@@ -217,7 +217,7 @@ else
         isSubmitting = true;
         try
         {
-            var result = await CompanyDataService.CreateCategoryAsync(createRequest);
+            var result = await CategoryService.CreateCategoryAsync(createRequest);
             showCreateModal = false;
             await LoadCategories();
         }
@@ -254,7 +254,7 @@ else
         isSubmitting = true;
         try
         {
-            var result = await CompanyDataService.UpdateCategoryAsync(editRequest);
+            var result = await CategoryService.UpdateCategoryAsync(editRequest);
             if (result != null)
             {
                 showEditModal = false;
@@ -277,7 +277,7 @@ else
         {
             try
             {
-                var success = await CompanyDataService.DeleteCategoryAsync(category.Id);
+                var success = await CategoryService.DeleteCategoryAsync(category.Id);
                 if (success)
                 {
                     await LoadCategories();
