@@ -23,6 +23,7 @@ namespace MiNegocio.Shared.Data.UoW
             CategoryRepository = new GenericRepository<Category>(dbContext);
             UnitOfMeasureRepository = new GenericRepository<UnitOfMeasure>(dbContext);
             ProductRepository = new GenericRepository<Product>(dbContext);
+            ProductWarehouseRepository = new GenericRepository<ProductWarehouse>(dbContext);
 
         }
 
@@ -34,6 +35,7 @@ namespace MiNegocio.Shared.Data.UoW
         public IGenericRepository<Category> CategoryRepository { get; set; }
         public IGenericRepository<UnitOfMeasure> UnitOfMeasureRepository { get; set; }
         public IGenericRepository<Product> ProductRepository { get; set; }
+        public IGenericRepository<ProductWarehouse> ProductWarehouseRepository { get; set; }
 
         public async Task<int> CommitAsync()
         {

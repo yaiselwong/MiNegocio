@@ -22,6 +22,8 @@ namespace MiNegocio.Shared.Data
         public DbSet<Category> Categories { get; set; } = null!;
         public DbSet<UnitOfMeasure> UnitsOfMeasure { get; set; } = null!;
         public DbSet<Product> Products { get; set; } = null!;
+
+        public DbSet<ProductWarehouse> ProductWarehouses { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
 
@@ -94,26 +96,21 @@ namespace MiNegocio.Shared.Data
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Product configuration
+            // Product entity
             modelBuilder.Entity<Product>(entity =>
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.Description).HasMaxLength(200);
                 entity.Property(e => e.Code).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Price).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.Stock).IsRequired();
+                entity.Property(e => e.PurchasePrice).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.SalePrice).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.CreatedAt).IsRequired();
 
                 entity.HasOne(e => e.Company)
                     .WithMany(c => c.Products)
                     .HasForeignKey(e => e.CompanyId)
                     .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(e => e.Warehouse)
-                    .WithMany(w => w.Products)
-                    .HasForeignKey(e => e.WarehouseId)
-                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.Category)
                     .WithMany(c => c.Products)
@@ -124,6 +121,28 @@ namespace MiNegocio.Shared.Data
                     .WithMany(u => u.Products)
                     .HasForeignKey(e => e.UnitOfMeasureId)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // ProductWarehouse entity
+            modelBuilder.Entity<ProductWarehouse>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Quantity).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.MinStock).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.CreatedAt).IsRequired();
+
+                // Composite key to ensure a product can only be in a warehouse once
+                entity.HasIndex(e => new { e.ProductId, e.WarehouseId }).IsUnique();
+
+                entity.HasOne(e => e.Product)
+                    .WithMany(p => p.ProductWarehouses)
+                    .HasForeignKey(e => e.ProductId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Warehouse)
+                    .WithMany(w => w.ProductWarehouses)
+                    .HasForeignKey(e => e.WarehouseId)
+                    .OnDelete(DeleteBehavior.NoAction);
             });
         }
     }

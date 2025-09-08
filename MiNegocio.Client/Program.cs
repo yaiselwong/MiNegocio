@@ -24,6 +24,7 @@ builder.Services.AddScoped<ICompanyDataService, CompanyDataService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 builder.Services.AddScoped<IUnitOfMeasureService, UnitOfMeasureService>();
+builder.Services.AddScoped<IProductService, ProductService>();
 // Registrar HttpClient base
 builder.Services.AddScoped(sp => new HttpClient
 {

@@ -20,5 +20,6 @@ namespace MiNegocio.Shared.Models
         // Navigation properties
         public Company? Company { get; set; }
         public ICollection<Product>? Products { get; set; }
+        public ICollection<ProductWarehouse>? ProductWarehouses { get; set; }
     }
 }
