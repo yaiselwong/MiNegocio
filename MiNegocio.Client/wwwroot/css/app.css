@@ -366,3 +366,252 @@ html, body {
     background-color: #d1ecf1;
     border-color: #bee5eb;
 }
+/* Estilos responsivos para el sidebar - SIN JAVASCRIPT */
+.page {
+    display: flex;
+    flex-direction: row;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Checkbox hack para controlar el sidebar */
+#sidebar-toggle {
+    display: none;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #f8f9fa;
+    border-right: 1px solid #dee2e6;
+    min-height: 100vh;
+    padding: 1rem;
+    transition: transform 0.3s ease-in-out;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    transform: translateX(0);
+}
+
+.main {
+    flex: 1;
+    /*margin-left: 250px;*/
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 0.3s ease-in-out;
+}
+
+.top-row {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.content {
+    flex: 1;
+    padding: 1.5rem;
+}
+
+/* Botón de menú móvil */
+.menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: #495057;
+    margin-right: 1rem;
+    line-height: 1;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s ease;
+}
+
+    .menu-toggle:hover {
+        background-color: #e9ecef;
+    }
+
+    .menu-toggle .oi-menu {
+        display: inline-block;
+        width: 1em;
+        height: 1em;
+    }
+
+/* Estilos para móviles */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+
+    /* Cuando el checkbox está marcado, mostrar el sidebar */
+    #sidebar-toggle:checked ~ .page .sidebar {
+        transform: translateX(0);
+    }
+
+    #sidebar-toggle:checked ~ .page .main {
+        margin-left: 0;
+    }
+
+    .main {
+        margin-left: 0;
+    }
+
+    .menu-toggle {
+        display: block;
+    }
+
+    .top-row {
+        padding-left: 0.5rem;
+    }
+
+    /* Overlay para móviles cuando el menú está abierto */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
+
+    #sidebar-toggle:checked ~ .page .sidebar-overlay {
+        display: block;
+    }
+
+    /* Evitar scroll horizontal cuando el sidebar está abierto */
+    #sidebar-toggle:checked ~ .page {
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+    }
+}
+
+/* Estilos del menú de navegación */
+.nav-item {
+    margin-bottom: 0.5rem;
+}
+
+.nav-link {
+    color: #495057;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+
+    .nav-link:hover {
+        background-color: #e9ecef;
+        color: #212529;
+    }
+
+    .nav-link.active {
+        background-color: #007bff;
+        color: white;
+    }
+
+/* Ajustes para el contenido en móviles */
+@media (max-width: 768px) {
+    .content {
+        padding: 1rem;
+    }
+
+    .card {
+        margin-bottom: 1rem;
+    }
+
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+
+    .btn-group {
+        flex-wrap: wrap;
+    }
+
+        .btn-group .btn {
+            margin-bottom: 0.25rem;
+        }
+}
+/* Asegurar que los íconos sean visibles */
+.oi {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    font-size: 1rem;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+/* Estilos específicos para el ícono del menú */
+.menu-toggle .oi-menu {
+    font-size: 1.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* Mejorar la visibilidad del botón de menú en móviles */
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+    }
+
+        .menu-toggle .oi-menu {
+            font-size: 1.5rem;
+            color: #495057;
+        }
+
+        .menu-toggle:hover .oi-menu {
+            color: #212529;
+        }
+}
+
+/* Asegurar que los enlaces del nav funcionen correctamente */
+.nav-item label {
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
+    .nav-item label .nav-link {
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+        /* Prevenir el subrayado en los enlaces */
+        .nav-item label .nav-link:hover,
+        .nav-item label .nav-link:focus {
+            text-decoration: none;
+        }
+
+/* Mejorar la experiencia táctil en móviles */
+@media (max-width: 768px) {
+    .nav-item label .nav-link {
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+
+        .nav-item label .nav-link:hover {
+            background-color: #e9ecef;
+        }
+
+        .nav-item label .nav-link.active {
+            background-color: #007bff;
+            color: white;
+        }
+}
