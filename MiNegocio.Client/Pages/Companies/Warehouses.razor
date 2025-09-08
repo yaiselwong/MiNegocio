@@ -1,12 +1,10 @@
 ﻿@page "/company-dashboard/warehouses"
 @using MiNegocio.Client.Shared.Interfaces
-@using MiNegocio.Client.Shared.Services
 @using MiNegocio.Shared.Dto.Request
 @using MiNegocio.Shared.Dto.Response
-@using Microsoft.AspNetCore.Authorization
 
 @attribute [Authorize(Roles = "SystemUser")]
-@inject ICompanyDataService CompanyDataService
+@inject IWarehouseService WarehouseService
 @inject IJSRuntime JS
 
 <h3>Gestión de Almacenes</h3>
@@ -209,7 +207,7 @@ else
     {
         try
         {
-            warehouses = await CompanyDataService.GetWarehousesAsync();
+            warehouses = await WarehouseService.GetWarehousesAsync();
         }
         catch (Exception ex)
         {
@@ -233,7 +231,7 @@ else
         isSubmitting = true;
         try
         {
-            var result = await CompanyDataService.CreateWarehouseAsync(createRequest);
+            var result = await WarehouseService.CreateWarehouseAsync(createRequest);
             showCreateModal = false;
             await LoadWarehouses();
         }
@@ -271,7 +269,7 @@ else
         isSubmitting = true;
         try
         {
-            var result = await CompanyDataService.UpdateWarehouseAsync(editRequest);
+            var result = await WarehouseService.UpdateWarehouseAsync(editRequest);
             if (result != null)
             {
                 showEditModal = false;
@@ -294,7 +292,7 @@ else
         {
             try
             {
-                var success = await CompanyDataService.DeleteWarehouseAsync(warehouse.Id);
+                var success = await WarehouseService.DeleteWarehouseAsync(warehouse.Id);
                 if (success)
                 {
                     await LoadWarehouses();

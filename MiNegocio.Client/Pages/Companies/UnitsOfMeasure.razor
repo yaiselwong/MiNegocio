@@ -1,10 +1,9 @@
-﻿@page "/company-dashboard/units-of-measure"
+﻿@page "/company-dashboard/unitofmeasures"
 @using MiNegocio.Client.Shared.Interfaces
 @using MiNegocio.Shared.Dto.Request
 @using MiNegocio.Shared.Dto.Response
-@using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "SystemUser")]
-@inject ICompanyDataService CompanyDataService
+@inject IUnitOfMeasureService UnitOfMeasureService
 @inject IJSRuntime JS
 
 <h3>Gestión de Unidades de Medida</h3>
@@ -13,7 +12,7 @@
     <button class="btn btn-primary" @onclick="ShowCreateModal">Nueva Unidad</button>
 </div>
 
-@if (units == null)
+@if (unitOfMeasures == null)
 {
     <div class="text-center">
         <div class="spinner-border" role="status">
@@ -22,7 +21,7 @@
         <p>Cargando unidades de medida...</p>
     </div>
 }
-else if (!units.Any())
+else if (!unitOfMeasures.Any())
 {
     <div class="alert alert-info">
         No hay unidades de medida registradas. Crea tu primera unidad para comenzar.
@@ -35,19 +34,19 @@ else
             <thead class="table-dark">
                 <tr>
                     <th>Nombre</th>
-                    <th>Código</th>
-                    <th>Símbolo</th>
+                    <th>Abreviatura</th>
+                    <th>Descripción</th>
                     <th>Estado</th>
                     <th>Productos</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var unit in units)
+                @foreach (var unit in unitOfMeasures)
                 {
                     <tr>
                         <td>@unit.Name</td>
-                        <td>@unit.Abbreviation</td>
+                        <td><strong>@unit.Abbreviation</strong></td>
                         <td>@unit.Description</td>
                         <td>
                             @if (unit.IsActive)
@@ -62,10 +61,10 @@ else
                         <td>@unit.ProductCount</td>
                         <td>
                             <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-outline-primary" @onclick="() => EditUnit(unit)" title="Editar">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => EditUnitOfMeasure(unit)" title="Editar">
                                     <span class="oi oi-pencil"></span>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUnit(unit)" title="Eliminar" disabled="@unit.ProductCount > 0">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUnitOfMeasure(unit)" title="Eliminar" disabled="@unit.ProductCount > 0">
                                     <span class="oi oi-trash"></span>
                                 </button>
                             </div>
@@ -88,7 +87,7 @@ else
                     <button type="button" class="btn-close" @onclick="HideCreateModal"></button>
                 </div>
                 <div class="modal-body">
-                    <EditForm Model="@createRequest" OnValidSubmit="@CreateUnit">
+                    <EditForm Model="@createRequest" OnValidSubmit="@CreateUnitOfMeasure">
                         <DataAnnotationsValidator />
                         <ValidationSummary class="text-danger" />
 
@@ -99,15 +98,15 @@ else
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Código:</label>
-                            <InputText class="form-control" @bind-Value="createRequest.Description" />
-                            <ValidationMessage For="@(() => createRequest.Description)" class="text-danger" />
+                            <label class="form-label">Abreviatura:</label>
+                            <InputText class="form-control" @bind-Value="createRequest.Abbreviation" />
+                            <ValidationMessage For="@(() => createRequest.Abbreviation)" class="text-danger" />
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Símbolo:</label>
-                            <InputText class="form-control" @bind-Value="createRequest.Abbreviation" />
-                            <ValidationMessage For="@(() => createRequest.Abbreviation)" class="text-danger" />
+                            <label class="form-label">Descripción:</label>
+                            <InputTextArea class="form-control" @bind-Value="createRequest.Description" />
+                            <ValidationMessage For="@(() => createRequest.Description)" class="text-danger" />
                         </div>
 
                         <div class="mb-3 form-check">
@@ -144,7 +143,7 @@ else
                     <button type="button" class="btn-close" @onclick="HideEditModal"></button>
                 </div>
                 <div class="modal-body">
-                    <EditForm Model="@editRequest" OnValidSubmit="@UpdateUnit">
+                    <EditForm Model="@editRequest" OnValidSubmit="@UpdateUnitOfMeasure">
                         <DataAnnotationsValidator />
                         <ValidationSummary class="text-danger" />
 
@@ -155,15 +154,15 @@ else
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Código:</label>
-                            <InputText class="form-control" @bind-Value="editRequest.Code" />
-                            <ValidationMessage For="@(() => editRequest.Code)" class="text-danger" />
+                            <label class="form-label">Abreviatura:</label>
+                            <InputText class="form-control" @bind-Value="editRequest.Abbreviation" />
+                            <ValidationMessage For="@(() => editRequest.Abbreviation)" class="text-danger" />
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Símbolo:</label>
-                            <InputText class="form-control" @bind-Value="editRequest.Symbol" />
-                            <ValidationMessage For="@(() => editRequest.Symbol)" class="text-danger" />
+                            <label class="form-label">Descripción:</label>
+                            <InputTextArea class="form-control" @bind-Value="editRequest.Description" />
+                            <ValidationMessage For="@(() => editRequest.Description)" class="text-danger" />
                         </div>
 
                         <div class="mb-3 form-check">
@@ -190,7 +189,7 @@ else
 }
 
 @code {
-    private List<UnitOfMeasureDto> units = new();
+    private List<UnitOfMeasureDto> unitOfMeasures = new();
     private bool showCreateModal = false;
     private bool showEditModal = false;
     private bool isSubmitting = false;
@@ -200,18 +199,18 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadUnits();
+        await LoadUnitOfMeasures();
     }
 
-    private async Task LoadUnits()
+    private async Task LoadUnitOfMeasures()
     {
         try
         {
-            units = await CompanyDataService.GetUnitsOfMeasureAsync();
+            unitOfMeasures = await UnitOfMeasureService.GetUnitOfMeasuresAsync();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading units: {ex.Message}");
+            Console.WriteLine($"Error loading unit of measures: {ex.Message}");
         }
     }
 
@@ -226,18 +225,18 @@ else
         showCreateModal = false;
     }
 
-    private async Task CreateUnit()
+    private async Task CreateUnitOfMeasure()
     {
         isSubmitting = true;
         try
         {
-            var result = await CompanyDataService.CreateUnitOfMeasureAsync(createRequest);
+            var result = await UnitOfMeasureService.CreateUnitOfMeasureAsync(createRequest);
             showCreateModal = false;
-            await LoadUnits();
+            await LoadUnitOfMeasures();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error creating unit: {ex.Message}");
+            Console.WriteLine($"Error creating unit of measure: {ex.Message}");
         }
         finally
         {
@@ -245,15 +244,15 @@ else
         }
     }
 
-    private void EditUnit(UnitOfMeasureDto unit)
+    private void EditUnitOfMeasure(UnitOfMeasureDto unit)
     {
         editingUnit = unit;
         editRequest = new UpdateUnitOfMeasureRequest
         {
             Id = unit.Id,
             Name = unit.Name,
-            Code = unit.Abbreviation,
-            Symbol = unit.Description,
+            Description = unit.Description,
+            Abbreviation = unit.Abbreviation,
             IsActive = unit.IsActive
         };
         showEditModal = true;
@@ -264,21 +263,21 @@ else
         showEditModal = false;
     }
 
-    private async Task UpdateUnit()
+    private async Task UpdateUnitOfMeasure()
     {
         isSubmitting = true;
         try
         {
-            var result = await CompanyDataService.UpdateUnitOfMeasureAsync(editRequest);
+            var result = await UnitOfMeasureService.UpdateUnitOfMeasureAsync(editRequest);
             if (result != null)
             {
                 showEditModal = false;
-                await LoadUnits();
+                await LoadUnitOfMeasures();
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error updating unit: {ex.Message}");
+            Console.WriteLine($"Error updating unit of measure: {ex.Message}");
         }
         finally
         {
@@ -286,16 +285,16 @@ else
         }
     }
 
-    private async Task DeleteUnit(UnitOfMeasureDto unit)
+    private async Task DeleteUnitOfMeasure(UnitOfMeasureDto unit)
     {
-        if (await JS.InvokeAsync<bool>("confirm", $"¿Estás seguro de eliminar la unidad '{unit.Name}'?"))
+        if (await JS.InvokeAsync<bool>("confirm", $"¿Estás seguro de eliminar la unidad de medida '{unit.Name}'?"))
         {
             try
             {
-                var success = await CompanyDataService.DeleteUnitOfMeasureAsync(unit.Id);
+                var success = await UnitOfMeasureService.DeleteUnitOfMeasureAsync(unit.Id);
                 if (success)
                 {
-                    await LoadUnits();
+                    await LoadUnitOfMeasures();
                 }
                 else
                 {
@@ -304,7 +303,7 @@ else
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error deleting unit: {ex.Message}");
+                Console.WriteLine($"Error deleting unit of measure: {ex.Message}");
             }
         }
     }

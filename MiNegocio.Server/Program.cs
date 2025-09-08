@@ -56,9 +56,9 @@ builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 builder.Services.AddScoped<ICompanyManagementService, CompanyManagementService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-builder.Services.AddScoped<WarehouseManagementService>();
-builder.Services.AddScoped<CategoryManagementService>();
-builder.Services.AddScoped<UnitOfMeasureManagementService>();
+builder.Services.AddScoped<IWarehouseService,WarehouseService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IUnitOfMeasureService,UnitOfMeasureService>();
 
 
 var app = builder.Build();
