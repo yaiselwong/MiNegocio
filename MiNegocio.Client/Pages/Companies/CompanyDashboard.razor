@@ -3,11 +3,12 @@
 @inject IWarehouseService WarehouseService
 @inject ICategoryService CategoryService
 @inject IUnitOfMeasureService UnitOfMeasureService
+@inject IProductService ProductService
 
 <h3>Panel de Control de Empresa</h3>
 
 <div class="row mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card bg-primary text-white">
             <div class="card-body">
                 <h5 class="card-title">Almacenes</h5>
@@ -19,7 +20,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card bg-success text-white">
             <div class="card-body">
                 <h5 class="card-title">Categorías</h5>
@@ -31,7 +32,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card bg-warning text-dark">
             <div class="card-body">
                 <h5 class="card-title">Unidades de Medida</h5>
@@ -39,6 +40,18 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="display-4">@unitOfMeasureCount</span>
                     <a href="/company-dashboard/unitofmeasures" class="btn btn-light">Gestionar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Productos</h5>
+                <p class="card-text">Gestiona tu catálogo de productos</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="display-4">@productCount</span>
+                    <a href="/company-dashboard/products" class="btn btn-light">Gestionar</a>
                 </div>
             </div>
         </div>
@@ -64,8 +77,8 @@
                         <span class="badge bg-warning">@activeUnitOfMeasures</span>
                     </div>
                     <div class="col-3">
-                        <h6>Total Elementos</h6>
-                        <span class="badge bg-info">@totalElements</span>
+                        <h6>Productos Activos</h6>
+                        <span class="badge bg-info">@activeProducts</span>
                     </div>
                 </div>
             </div>
@@ -77,10 +90,11 @@
     private int warehouseCount = 0;
     private int categoryCount = 0;
     private int unitOfMeasureCount = 0;
+    private int productCount = 0;
     private int activeWarehouses = 0;
     private int activeCategories = 0;
     private int activeUnitOfMeasures = 0;
-    private int totalElements = 0;
+    private int activeProducts = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -94,14 +108,16 @@
             var warehouses = await WarehouseService.GetWarehousesAsync();
             var categories = await CategoryService.GetCategoriesAsync();
             var unitOfMeasures = await UnitOfMeasureService.GetUnitOfMeasuresAsync();
+            var products = await ProductService.GetProductsAsync();
 
             warehouseCount = warehouses.Count;
             categoryCount = categories.Count;
             unitOfMeasureCount = unitOfMeasures.Count;
+            productCount = products.Count;
             activeWarehouses = warehouses.Count(w => w.IsActive);
             activeCategories = categories.Count(c => c.IsActive);
             activeUnitOfMeasures = unitOfMeasures.Count(u => u.IsActive);
-            totalElements = warehouseCount + categoryCount + unitOfMeasureCount;
+            activeProducts = products.Count(p => p.IsActive);
         }
         catch (Exception ex)
         {

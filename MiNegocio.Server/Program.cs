@@ -59,6 +59,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IWarehouseService,WarehouseService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IUnitOfMeasureService,UnitOfMeasureService>();
+builder.Services.AddScoped<IProductService,ProductService>();
 
 
 var app = builder.Build();
@@ -90,7 +91,8 @@ app.MapFallbackToFile("index.html");
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    context.Database.EnsureCreated();
+    //context.Database.EnsureCreated();
+    context.Database.Migrate();
 
     // Seed initial data if needed
     if (!context.Companies.Any())

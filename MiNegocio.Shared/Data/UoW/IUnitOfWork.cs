@@ -19,6 +19,7 @@ namespace MiNegocio.Shared.Data.UoW
         IGenericRepository<Category> CategoryRepository { get; set; }
         IGenericRepository<UnitOfMeasure> UnitOfMeasureRepository { get; set; }
        IGenericRepository<Product> ProductRepository { get; set; }
+       IGenericRepository<ProductWarehouse> ProductWarehouseRepository { get; set; }
 
     }
 }
