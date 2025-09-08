@@ -1,0 +1,311 @@
+﻿@page "/company-dashboard/units-of-measure"
+@using MiNegocio.Client.Shared.Services
+@using MiNegocio.Shared.Dto.Request
+@using MiNegocio.Shared.Dto.Response
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "SystemUser")]
+@inject IUnitOfMeasureManagementService UnitOfMeasureService
+@inject CustomAuthStateProvider AuthStateProvider
+
+<h3>Gestión de Unidades de Medida</h3>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="ShowCreateUnitModal">Agregar Unidad de Medida</button>
+</div>
+
+@if (units == null)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p>Cargando unidades de medida...</p>
+    </div>
+}
+else if (!units.Any())
+{
+    <div class="alert alert-info">
+        No hay unidades de medida registradas. Agrega tu primera unidad de medida para empezar.
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Abreviatura</th>
+                    <th>Descripción</th>
+                    <th>Estado</th>
+                    <th>Productos</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var unit in units)
+                {
+                    <tr>
+                        <td>@unit.Name</td>
+                        <td><span class="badge bg-secondary">@unit.Abbreviation</span></td>
+                        <td>@unit.Description</td>
+                        <td>
+                            <span class="badge @(unit.IsActive ? "bg-success" : "bg-secondary")">
+                                @(unit.IsActive ? "Activa" : "Inactiva")
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">@unit.ProductCount</span>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => EditUnit(unit)" title="Editar">
+                                    <span class="oi oi-pencil"></span>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUnit(unit)" title="Eliminar"
+                                        disabled="@(unit.ProductCount > 0)">
+                                    <span class="oi oi-trash"></span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<!-- Create Unit Modal -->
+@if (showCreateUnitModal)
+{
+    <div class="modal d-block show" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Agregar Nueva Unidad de Medida</h5>
+                    <button type="button" class="btn-close" @onclick="HideCreateUnitModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@newUnit" OnValidSubmit="@CreateUnit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+
+                        <div class="mb-3">
+                            <label for="unit-name" class="form-label">Nombre:</label>
+                            <InputText id="unit-name" class="form-control" @bind-Value="newUnit.Name" />
+                            <ValidationMessage For="@(() => newUnit.Name)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="unit-abbreviation" class="form-label">Abreviatura:</label>
+                            <InputText id="unit-abbreviation" class="form-control" @bind-Value="newUnit.Abbreviation" />
+                            <ValidationMessage For="@(() => newUnit.Abbreviation)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="unit-description" class="form-label">Descripción:</label>
+                            <TextArea id="unit-description" class="form-control" @bind-Value="newUnit.Description" rows="3" />
+                            <ValidationMessage For="@(() => newUnit.Description)" class="text-danger" />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                            @if (isSubmitting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Guardando...</span>
+                            }
+                            else
+                            {
+                                <span>Guardar</span>
+                            }
+                        </button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Edit Unit Modal -->
+@if (showEditUnitModal && editingUnit != null)
+{
+    <div class="modal d-block show" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Unidad de Medida</h5>
+                    <button type="button" class="btn-close" @onclick="HideEditUnitModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@editUnitRequest" OnValidSubmit="@UpdateUnit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+
+                        <div class="mb-3">
+                            <label for="edit-unit-name" class="form-label">Nombre:</label>
+                            <InputText id="edit-unit-name" class="form-control" @bind-Value="editUnitRequest.Name" />
+                            <ValidationMessage For="@(() => editUnitRequest.Name)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edit-unit-abbreviation" class="form-label">Abreviatura:</label>
+                            <InputText id="edit-unit-abbreviation" class="form-control" @bind-Value="editUnitRequest.Abbreviation" />
+                            <ValidationMessage For="@(() => editUnitRequest.Abbreviation)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edit-unit-description" class="form-label">Descripción:</label>
+                            <TextArea id="edit-unit-description" class="form-control" @bind-Value="editUnitRequest.Description" rows="3" />
+                            <ValidationMessage For="@(() => editUnitRequest.Description)" class="text-danger" />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                            @if (isSubmitting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Actualizando...</span>
+                            }
+                            else
+                            {
+                                <span>Actualizar</span>
+                            }
+                        </button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<UnitOfMeasureDto> units = new();
+    private bool showCreateUnitModal = false;
+    private bool showEditUnitModal = false;
+    private bool isSubmitting = false;
+    private CreateUnitOfMeasureRequest newUnit = new();
+    private UnitOfMeasureDto? editingUnit;
+    private CreateUnitOfMeasureRequest editUnitRequest = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUnits();
+    }
+
+    private async Task LoadUnits()
+    {
+        try
+        {
+            var companyId = await AuthStateProvider.GetCompanyIdAsync();
+            if (companyId.HasValue)
+            {
+                units = await UnitOfMeasureService.GetUnitsOfMeasureByCompanyAsync(companyId.Value);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle error
+            Console.WriteLine($"Error loading units of measure: {ex.Message}");
+        }
+    }
+
+    private void ShowCreateUnitModal()
+    {
+        newUnit = new CreateUnitOfMeasureRequest();
+        showCreateUnitModal = true;
+    }
+
+    private void HideCreateUnitModal()
+    {
+        showCreateUnitModal = false;
+    }
+
+    private async Task CreateUnit()
+    {
+        isSubmitting = true;
+        try
+        {
+            var result = await UnitOfMeasureService.CreateUnitOfMeasureAsync(newUnit, 1); // TODO: Get company ID
+            if (result != null)
+            {
+                showCreateUnitModal = false;
+                await LoadUnits();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle error
+            Console.WriteLine($"Error creating unit of measure: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void EditUnit(UnitOfMeasureDto unit)
+    {
+        editingUnit = unit;
+        editUnitRequest = new CreateUnitOfMeasureRequest
+        {
+            Name = unit.Name,
+            Abbreviation = unit.Abbreviation,
+            Description = unit.Description
+        };
+        showEditUnitModal = true;
+    }
+
+    private void HideEditUnitModal()
+    {
+        showEditUnitModal = false;
+    }
+
+    private async Task UpdateUnit()
+    {
+        isSubmitting = true;
+        try
+        {
+            if (editingUnit != null)
+            {
+                var result = await UnitOfMeasureService.UpdateUnitOfMeasureAsync(editingUnit.Id, editUnitRequest);
+                if (result != null)
+                {
+                    showEditUnitModal = false;
+                    await LoadUnits();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle error
+            Console.WriteLine($"Error updating unit of measure: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task DeleteUnit(UnitOfMeasureDto unit)
+    {
+        if (await js.InvokeAsync<bool>("confirm", $"¿Estás seguro de que deseas eliminar la unidad de medida '{unit.Name}'?"))
+        {
+            try
+            {
+                var success = await UnitOfMeasureService.DeleteUnitOfMeasureAsync(unit.Id);
+                if (success)
+                {
+                    await LoadUnits();
+                }
+                else
+                {
+                    await js.InvokeAsync<string>("alert", "No se puede eliminar la unidad de medida porque tiene productos asociados.");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle error
+                Console.WriteLine($"Error deleting unit of measure: {ex.Message}");
+            }
+        }
+    }
+}

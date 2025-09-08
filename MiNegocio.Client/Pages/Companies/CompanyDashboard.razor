@@ -1,114 +1,78 @@
 ﻿@page "/company-dashboard"
-@using MiNegocio.Client.Shared.Interfaces
 @using MiNegocio.Client.Shared.Services
-@using MiNegocio.Shared.Models
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "SystemUser")]
 @inject CustomAuthStateProvider AuthStateProvider
-@inject IAdminService AdminService
 
-<h3>Company Dashboard</h3>
+<h3>Panel de Empresa</h3>
 
-@if (company == null)
-{
-    <div class="text-center">
-        <div class="spinner-border" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <p>Loading company information...</p>
-    </div>
-}
-else
-{
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">@company.Name</h4>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Address:</strong> @company.Address</p>
-                            <p><strong>Phone:</strong> @company.Phone</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Email:</strong> @company.Email</p>
-                            <p><strong>Created:</strong> @company.CreatedAt.ToShortDateString()</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <h4>Total Users</h4>
-                    <p class="display-4">@companyUsers.Count</p>
-                </div>
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="card-title">Almacenes</h5>
+                <p class="card-text">Gestiona los almacenes de tu empresa</p>
+                <a href="/company-dashboard/warehouses" class="btn btn-primary">Gestionar Almacenes</a>
             </div>
         </div>
     </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h4 class="mb-0">Company Users</h4>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="card-title">Categorías</h5>
+                <p class="card-text">Organiza tus productos por categorías</p>
+                <a href="/company-dashboard/categories" class="btn btn-primary">Gestionar Categorías</a>
+            </div>
         </div>
-        <div class="card-body">
-            @if (companyUsers == null)
-            {
-                <div class="text-center">
-                    <div class="spinner-border" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p>Loading users...</p>
-                </div>
-            }
-            else if (!companyUsers.Any())
-            {
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="card-title">Unidades de Medida</h5>
+                <p class="card-text">Define las unidades de medida para tus productos</p>
+                <a href="/company-dashboard/units-of-measure" class="btn btn-primary">Gestionar Unidades</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Resumen de la Empresa</h5>
+        <div class="row">
+            <div class="col-md-3">
                 <div class="alert alert-info">
-                    No users found for this company.
+                    <h4>Total Almacenes</h4>
+                    <p class="display-4">@totalWarehouses</p>
                 </div>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Joined</th>
-                                <th>Last Login</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var user in companyUsers)
-                            {
-                                <tr>
-                                    <td>@user.Username</td>
-                                    <td>@user.Email</td>
-                                    <td>
-                                        <span class="badge @(user.Role == UserRole.Admin ? "bg-danger" : "bg-primary")">
-                                            @user.Role
-                                        </span>
-                                    </td>
-                                    <td>@user.CreatedAt.ToShortDateString()</td>
-                                    <td>@(user.LastLoginAt?.ToShortDateString() ?? "Never")</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+            </div>
+            <div class="col-md-3">
+                <div class="alert alert-success">
+                    <h4>Total Categorías</h4>
+                    <p class="display-4">@totalCategories</p>
                 </div>
-            }
+            </div>
+            <div class="col-md-3">
+                <div class="alert alert-warning">
+                    <h4>Total Unidades</h4>
+                    <p class="display-4">@totalUnits</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="alert alert-primary">
+                    <h4>Total Productos</h4>
+                    <p class="display-4">@totalProducts</p>
+                </div>
+            </div>
         </div>
     </div>
-}
+</div>
 
 @code {
-    private Company? company;
-    private List<User> companyUsers = new();
+    private int totalWarehouses = 0;
+    private int totalCategories = 0;
+    private int totalUnits = 0;
+    private int totalProducts = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -122,16 +86,18 @@ else
             var companyId = await AuthStateProvider.GetCompanyIdAsync();
             if (companyId.HasValue)
             {
-                company = await AdminService.GetCompanyAsync(companyId.Value);
-                if (company != null)
-                {
-                    companyUsers = await AdminService.GetUsersByCompanyAsync(companyId.Value);
-                }
+                // Aquí cargarías los datos reales de la empresa
+                // Por ahora, usamos datos de ejemplo
+                totalWarehouses = 3;
+                totalCategories = 5;
+                totalUnits = 8;
+                totalProducts = 25;
             }
         }
         catch (Exception ex)
         {
             // Handle error
+            Console.WriteLine($"Error loading company data: {ex.Message}");
         }
     }
 }

@@ -18,5 +18,9 @@ namespace MiNegocio.Shared.Models
 
         // Navigation properties
         public ICollection<User> Users { get; set; } = new List<User>();
+        public ICollection<Warehouse> Warehouses { get; set; } = new List<Warehouse>();
+        public ICollection<Category> Categories { get; set; } = new List<Category>();
+        public ICollection<UnitOfMeasure> UnitsOfMeasure { get; set; } = new List<UnitOfMeasure>();
+        public ICollection<Product> Products { get; set; } = new List<Product>();
     }
 }
