@@ -24,6 +24,8 @@ namespace MiNegocio.Shared.Data
         public DbSet<Product> Products { get; set; } = null!;
 
         public DbSet<ProductWarehouse> ProductWarehouses { get; set; } = null!;
+
+        public DbSet<ProductTransfer> ProductTransfers { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
 
@@ -143,6 +145,31 @@ namespace MiNegocio.Shared.Data
                     .WithMany(w => w.ProductWarehouses)
                     .HasForeignKey(e => e.WarehouseId)
                     .OnDelete(DeleteBehavior.NoAction);
+            });
+            // ProductTransfer entity
+            modelBuilder.Entity<ProductTransfer>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Quantity).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.TransferDate).IsRequired();
+                entity.Property(e => e.Status).HasMaxLength(50);
+                entity.Property(e => e.CreatedAt).IsRequired();
+
+                entity.HasOne(e => e.Product)
+                    .WithMany(p => p.Transfers)
+                    .HasForeignKey(e => e.ProductId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.FromWarehouse)
+                    .WithMany(w => w.OutgoingTransfers)
+                    .HasForeignKey(e => e.FromWarehouseId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+
+                entity.HasOne(e => e.ToWarehouse)
+                    .WithMany(w => w.IncomingTransfers)
+                    .HasForeignKey(e => e.ToWarehouseId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

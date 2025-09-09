@@ -78,6 +78,13 @@ else
                                 <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProduct(product)" title="Eliminar">
                                     <span class="oi oi-trash"></span>
                                 </button>
+                               @*  <button class="btn btn-sm btn-outline-warning" @onclick="() => TransferProduct(product)" title="Transferir" disabled="@(product.ProductWarehouses.Count < 2)"> *@
+                                <button class="btn btn-sm btn-outline-warning" @onclick="() => TransferProduct(product)" title="Transferir">
+                                   <span class="oi oi-transfer"></span>
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => ShowTransferHistory(product)" title="Historial">
+                                    <span class="oi oi-clock"></span>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -485,6 +492,177 @@ else
     </div>
 }
 
+
+<!-- Transfer Modal -->
+@if (showTransferModal && transferProduct != null)
+{
+    <div class="modal d-block show" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Transferir Producto - @transferProduct.Name</h5>
+                    <button type="button" class="btn-close" @onclick="HideTransferModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Stock Disponible por Almacén:</label>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Almacén</th>
+                                        <th>Stock</th>
+                                        <th>Mínimo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var pw in transferProduct.ProductWarehouses)
+                                    {
+                                        <tr>
+                                            <td>@pw.Warehouse?.Name</td>
+                                            <td>@pw.Quantity</td>
+                                            <td>@pw.MinStock</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <EditForm Model="@transferRequest" OnValidSubmit="@TransferProduct">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Desde Almacén:</label>
+                            <InputSelect class="form-select" @bind-Value="transferRequest.FromWarehouseId" @onchange="UpdateAvailableStock">
+                                <option value="">Seleccionar almacén</option>
+                                @foreach (var pw in transferProduct.ProductWarehouses.Where(pw => pw.Quantity > 0))
+                                {
+                                    <option value="@pw.WarehouseId">@pw.Warehouse?.Name (@pw.Quantity disponible)</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="@(() => transferRequest.FromWarehouseId)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Hacia Almacén:</label>
+                            <InputSelect class="form-select" @bind-Value="transferRequest.ToWarehouseId">
+                                <option value="">Seleccionar almacén</option>
+                                @foreach (var warehouse in warehouses.Where(w => w.Id != transferRequest.FromWarehouseId))
+                                {
+                                    <option value="@warehouse.Id">@warehouse.Name</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="@(() => transferRequest.ToWarehouseId)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Cantidad a Transferir:</label>
+                            <InputNumber type="number" class="form-control" @bind-Value="transferRequest.Quantity" min="0.01" max="@availableStock" step="0.01" />
+                            <ValidationMessage For="@(() => transferRequest.Quantity)" class="text-danger" />
+                            <small class="text-muted">Stock disponible: @availableStock</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Notas (opcional):</label>
+                            <InputTextArea class="form-control" @bind-Value="transferRequest.Notes" />
+                            <ValidationMessage For="@(() => transferRequest.Notes)" class="text-danger" />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                            @if (isSubmitting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Transferiendo...</span>
+                            }
+                            else
+                            {
+                                <span>Transferir</span>
+                            }
+                        </button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Transfer History Modal -->
+@if (showTransferHistoryModal && historyProduct != null)
+{
+    <div class="modal d-block show" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Historial de Transferencias - @historyProduct.Name</h5>
+                    <button type="button" class="btn-close" @onclick="HideTransferHistoryModal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (productTransfers == null)
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p>Cargando historial...</p>
+                        </div>
+                    }
+                    else if (!productTransfers.Any())
+                    {
+                        <div class="alert alert-info">
+                            No hay transferencias registradas para este producto.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Desde</th>
+                                        <th>Hacia</th>
+                                        <th>Cantidad</th>
+                                        <th>Estado</th>
+                                        <th>Notas</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var transfer in productTransfers)
+                                    {
+                                        <tr>
+                                            <td>@transfer.TransferDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@transfer.FromWarehouse?.Name</td>
+                                            <td>@transfer.ToWarehouse?.Name</td>
+                                            <td>@transfer.Quantity</td>
+                                            <td>
+                                                @if (transfer.Status == "Completed")
+                                                {
+                                                    <span class="badge bg-success">Completada</span>
+                                                }
+                                                else if (transfer.Status == "Pending")
+                                                {
+                                                    <span class="badge bg-warning">Pendiente</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">Cancelada</span>
+                                                }
+                                            </td>
+                                            <td>@transfer.Notes</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<ProductDto> products = new();
     private List<CategoryDto> categories = new();
@@ -504,6 +682,16 @@ else
     private ProductDto? inventoryProduct;
     private ProductWarehouseDto? editingWarehouseInventory;
     private UpdateProductWarehouseRequest editWarehouseRequest = new();
+
+    // Variables para transferencias
+    private bool showTransferModal = false;
+    private bool showTransferHistoryModal = false;
+    private ProductDto? transferProduct;
+    private ProductDto? historyProduct;
+    private List<ProductTransferDto> productTransfers = new();
+    private CreateProductTransferRequest transferRequest = new();
+    private decimal availableStock = 0;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -690,5 +878,72 @@ else
         {
             isSubmitting = false;
         }
+    }
+    private void TransferProduct(ProductDto product)
+    {
+        transferProduct = product;
+        transferRequest = new CreateProductTransferRequest
+        {
+            ProductId = product.Id,
+            TransferDate = DateTime.UtcNow
+        };
+        availableStock = 0;
+        showTransferModal = true;
+    }
+
+    private void HideTransferModal()
+    {
+        showTransferModal = false;
+    }
+
+    private void UpdateAvailableStock(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int warehouseId))
+        {
+            var warehouse = transferProduct?.ProductWarehouses.FirstOrDefault(pw => pw.WarehouseId == warehouseId);
+            availableStock = warehouse?.Quantity ?? 0;
+        }
+    }
+
+    private async Task TransferProduct()
+    {
+        isSubmitting = true;
+        try
+        {
+            var success = await ProductService.TransferProductAsync(transferRequest);
+            if (success)
+            {
+                showTransferModal = false;
+                await LoadData();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error transferring product: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task ShowTransferHistory(ProductDto product)
+    {
+        historyProduct = product;
+        showTransferHistoryModal = true;
+
+        try
+        {
+            productTransfers = await ProductService.GetProductTransfersAsync(product.Id);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading transfer history: {ex.Message}");
+        }
+    }
+
+    private void HideTransferHistoryModal()
+    {
+        showTransferHistoryModal = false;
     }
 }

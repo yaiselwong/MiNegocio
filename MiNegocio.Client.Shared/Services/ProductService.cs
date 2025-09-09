@@ -69,5 +69,15 @@ namespace MiNegocio.Client.Shared.Services
         {
             return await _httpClient.GetFromJsonAsync<List<ProductWarehouseDto>>($"api/product/{productId}/warehouses") ?? new List<ProductWarehouseDto>();
         }
+        public async Task<bool> TransferProductAsync(CreateProductTransferRequest request)
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/product/transfer", request);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<List<ProductTransferDto>> GetProductTransfersAsync(int productId)
+        {
+            return await _httpClient.GetFromJsonAsync<List<ProductTransferDto>>($"api/product/{productId}/transfers") ?? new List<ProductTransferDto>();
+        }
     }
 }

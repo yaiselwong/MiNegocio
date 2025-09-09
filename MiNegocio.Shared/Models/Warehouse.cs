@@ -21,5 +21,7 @@ namespace MiNegocio.Shared.Models
         public Company? Company { get; set; }
         public ICollection<Product>? Products { get; set; }
         public ICollection<ProductWarehouse>? ProductWarehouses { get; set; }
+        public ICollection<ProductTransfer>? OutgoingTransfers { get; set; } = new List<ProductTransfer>();
+        public ICollection<ProductTransfer>? IncomingTransfers { get; set; } = new List<ProductTransfer>();
     }
 }

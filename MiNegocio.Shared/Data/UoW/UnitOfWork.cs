@@ -1,4 +1,5 @@
-﻿using MiNegocio.Shared.Data.Repository;
+﻿using Microsoft.EntityFrameworkCore.Storage;
+using MiNegocio.Shared.Data.Repository;
 using MiNegocio.Shared.Models;
 using System;
 using System.Collections.Generic;
@@ -24,6 +25,7 @@ namespace MiNegocio.Shared.Data.UoW
             UnitOfMeasureRepository = new GenericRepository<UnitOfMeasure>(dbContext);
             ProductRepository = new GenericRepository<Product>(dbContext);
             ProductWarehouseRepository = new GenericRepository<ProductWarehouse>(dbContext);
+            ProductTransferRepository = new GenericRepository<ProductTransfer>(dbContext);
 
         }
 
@@ -36,10 +38,15 @@ namespace MiNegocio.Shared.Data.UoW
         public IGenericRepository<UnitOfMeasure> UnitOfMeasureRepository { get; set; }
         public IGenericRepository<Product> ProductRepository { get; set; }
         public IGenericRepository<ProductWarehouse> ProductWarehouseRepository { get; set; }
+        public IGenericRepository<ProductTransfer> ProductTransferRepository { get; set; }
 
         public async Task<int> CommitAsync()
         {
             return await dbContext.SaveChangesAsync();
+        }
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await dbContext.Database.BeginTransactionAsync();
         }
     }
 }

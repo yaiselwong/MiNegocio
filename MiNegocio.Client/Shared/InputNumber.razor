@@ -1,0 +1,35 @@
+﻿@inherits InputBase<decimal>
+
+<input type="number" class="@CssClass" value="@CurrentValue" @onchange="OnChange" />
+@code {
+    [Parameter]
+    public string Format { get; set; } = "N2";
+
+    protected override bool TryParseValueFromString(string? value, out decimal result, out string? validationErrorMessage)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            result = default;
+            validationErrorMessage = null;
+            return true;
+        }
+
+        if (decimal.TryParse(value, out result))
+        {
+            validationErrorMessage = null;
+            return true;
+        }
+
+        validationErrorMessage = "El valor debe ser un número válido.";
+        return false;
+    }
+    protected override string? FormatValueAsString(decimal value)
+    {
+        return value.ToString(Format);
+    }
+
+    private void OnChange(ChangeEventArgs e)
+    {
+        CurrentValueAsString = e.Value?.ToString();
+    }
+}

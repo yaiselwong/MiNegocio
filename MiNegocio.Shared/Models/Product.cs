@@ -47,5 +47,6 @@ namespace MiNegocio.Shared.Models
         public Category? Category { get; set; }
         public UnitOfMeasure? UnitOfMeasure { get; set; }
         public ICollection<ProductWarehouse> ProductWarehouses { get; set; } = new List<ProductWarehouse>();
+        public ICollection<ProductTransfer>? Transfers { get; set; } = new List<ProductTransfer>();
     }
 }

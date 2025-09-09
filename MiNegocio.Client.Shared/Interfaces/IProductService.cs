@@ -17,5 +17,7 @@ namespace MiNegocio.Client.Shared.Interfaces
         Task<bool> DeleteProductAsync(int id);
         Task<ProductWarehouseDto?> UpdateProductWarehouseAsync(UpdateProductWarehouseRequest request);
         Task<List<ProductWarehouseDto>> GetProductWarehousesAsync(int productId);
+        Task<bool> TransferProductAsync(CreateProductTransferRequest request);
+        Task<List<ProductTransferDto>> GetProductTransfersAsync(int productId);
     }
 }

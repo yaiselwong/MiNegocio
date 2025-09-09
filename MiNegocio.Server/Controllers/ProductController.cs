@@ -149,5 +149,77 @@ namespace MiNegocio.Server.Controllers
             var productWarehouses = await _productService.GetProductWarehousesAsync(productId);
             return Ok(productWarehouses);
         }
+        [HttpPost("transfer")]
+        public async Task<IActionResult> TransferProduct([FromBody] CreateProductTransferRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            // Verificar que el producto pertenezca a la empresa del usuario
+            var companyIdClaim = User.FindFirst("CompanyId")?.Value;
+            if (string.IsNullOrEmpty(companyIdClaim) || !int.TryParse(companyIdClaim, out int companyId))
+            {
+                return BadRequest("No se pudo determinar la empresa del usuario");
+            }
+
+            var product = await _productService.GetProductByIdAsync(request.ProductId);
+            if (product == null || product.CompanyId != companyId)
+            {
+                return Forbid();
+            }
+
+            // Verificar que los almacenes pertenezcan a la empresa
+            var warehouses = await _warehouseService.GetWarehousesByCompanyAsync(companyId);
+            var fromWarehouse = warehouses.FirstOrDefault(w => w.Id == request.FromWarehouseId);
+            var toWarehouse = warehouses.FirstOrDefault(w => w.Id == request.ToWarehouseId);
+
+            if (fromWarehouse == null || toWarehouse == null ||
+                fromWarehouse.CompanyId != companyId || toWarehouse.CompanyId != companyId)
+            {
+                return Forbid();
+            }
+
+            // Verificar que no sea el mismo almacén
+            if (request.FromWarehouseId == request.ToWarehouseId)
+            {
+                return BadRequest("No se puede transferir al mismo almacén");
+            }
+
+            try
+            {
+                var success = await _productService.TransferProductAsync(request);
+                if (success)
+                {
+                    return Ok(new { message = "Transferencia realizada exitosamente" });
+                }
+                return BadRequest("Error al realizar la transferencia");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("{productId}/transfers")]
+        public async Task<ActionResult<List<ProductTransferDto>>> GetProductTransfers(int productId)
+        {
+            var product = await _productService.GetProductByIdAsync(productId);
+            if (product == null)
+            {
+                return NotFound();
+            }
+
+            // Verificar que el producto pertenezca a la empresa del usuario
+            var companyIdClaim = User.FindFirst("CompanyId")?.Value;
+            if (string.IsNullOrEmpty(companyIdClaim) || !int.TryParse(companyIdClaim, out int companyId) || product.CompanyId != companyId)
+            {
+                return Forbid();
+            }
+
+            var transfers = await _productService.GetProductTransfersAsync(productId);
+            return Ok(transfers);
+        }
     }
 }

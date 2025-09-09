@@ -50,7 +50,7 @@ namespace MiNegocio.Server.Services
                     CompanyId = p.Category.CompanyId,
                     CreatedAt = p.Category.CreatedAt,
                     UpdatedAt = p.Category.UpdatedAt,
-                    ProductCount =0
+                    ProductCount = 0
                 } : null,
                 UnitOfMeasure = p.UnitOfMeasure != null ? new UnitOfMeasureDto
                 {
@@ -222,13 +222,13 @@ namespace MiNegocio.Server.Services
             product.UnitOfMeasureId = request.UnitOfMeasureId;
             product.UpdatedAt = DateTime.UtcNow;
 
-             _unitOfWork.ProductRepository.Update(product);
+            _unitOfWork.ProductRepository.Update(product);
 
             // Update product warehouses
             // Remove existing warehouses
             foreach (var existingWarehouse in product.ProductWarehouses.ToList())
             {
-                 _unitOfWork.ProductWarehouseRepository.Delete(existingWarehouse);
+                _unitOfWork.ProductWarehouseRepository.Delete(existingWarehouse);
             }
 
             // Add updated warehouses
@@ -262,10 +262,10 @@ namespace MiNegocio.Server.Services
             // Remove product warehouses first
             foreach (var productWarehouse in product.ProductWarehouses.ToList())
             {
-                 _unitOfWork.ProductWarehouseRepository.Delete(productWarehouse);
+                _unitOfWork.ProductWarehouseRepository.Delete(productWarehouse);
             }
 
-             _unitOfWork.ProductRepository.Delete(product);
+            _unitOfWork.ProductRepository.Delete(product);
             await _unitOfWork.CommitAsync();
 
             return true;
@@ -315,6 +315,130 @@ namespace MiNegocio.Server.Services
                     CreatedAt = pw.Warehouse.CreatedAt,
                     UpdatedAt = pw.Warehouse.UpdatedAt,
                     ProductCount = 0
+                } : null
+            }).ToList();
+        }
+    public async Task<bool> TransferProductAsync(CreateProductTransferRequest request)
+        {
+            using var transaction = await _unitOfWork.BeginTransactionAsync(); // Iniciar transacción
+
+            try
+            {
+                // Verificar stock disponible en el almacén de origen
+                var fromWarehouse = await _unitOfWork.ProductWarehouseRepository.GetAll()
+                    .FirstOrDefaultAsync(pw => pw.ProductId == request.ProductId && pw.WarehouseId == request.FromWarehouseId);
+
+                if (fromWarehouse == null || fromWarehouse.Quantity < request.Quantity)
+                {
+                    throw new Exception("No hay suficiente stock disponible en el almacén de origen");
+                }
+
+                // Obtener o crear registro en el almacén de destino
+                var toWarehouse = await _unitOfWork.ProductWarehouseRepository.GetAll()
+                    .FirstOrDefaultAsync(pw => pw.ProductId == request.ProductId && pw.WarehouseId == request.ToWarehouseId);
+
+                if (toWarehouse == null)
+                {
+                    toWarehouse = new ProductWarehouse
+                    {
+                        ProductId = request.ProductId,
+                        WarehouseId = request.ToWarehouseId,
+                        Quantity = 0,
+                        MinStock = 0,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    await _unitOfWork.ProductWarehouseRepository.Add(toWarehouse);
+                }
+
+                // Actualizar cantidades
+                fromWarehouse.Quantity -= request.Quantity;
+                toWarehouse.Quantity += request.Quantity;
+
+                _unitOfWork.ProductWarehouseRepository.Update(fromWarehouse);
+                _unitOfWork.ProductWarehouseRepository.Update(toWarehouse);
+
+                // Crear registro de transferencia
+                var transfer = new ProductTransfer
+                {
+                    ProductId = request.ProductId,
+                    FromWarehouseId = request.FromWarehouseId,
+                    ToWarehouseId = request.ToWarehouseId,
+                    Quantity = request.Quantity,
+                    TransferDate = request.TransferDate,
+                    Notes = request.Notes,
+                    Status = "Completed",
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _unitOfWork.ProductTransferRepository.Add(transfer);
+                await _unitOfWork.CommitAsync();
+
+                return true;
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<List<ProductTransferDto>> GetProductTransfersAsync(int productId)
+        {
+            var transfers = await _unitOfWork.ProductTransferRepository.GetAll()
+                .Include(t => t.Product)
+                .Include(t => t.FromWarehouse)
+                .Include(t => t.ToWarehouse)
+                .Where(t => t.ProductId == productId)
+                .OrderByDescending(t => t.TransferDate)
+                .ToListAsync();
+
+            return transfers.Select(t => new ProductTransferDto
+            {
+                Id = t.Id,
+                ProductId = t.ProductId,
+                FromWarehouseId = t.FromWarehouseId,
+                ToWarehouseId = t.ToWarehouseId,
+                Quantity = t.Quantity,
+                TransferDate = t.TransferDate,
+                Notes = t.Notes,
+                Status = t.Status,
+                CreatedAt = t.CreatedAt,
+                UpdatedAt = t.UpdatedAt,
+                Product = t.Product != null ? new ProductDto
+                {
+                    Id = t.Product.Id,
+                    Name = t.Product.Name,
+                    Code = t.Product.Code,
+                    PurchasePrice = t.Product.PurchasePrice,
+                    SalePrice = t.Product.SalePrice,
+                    IsActive = t.Product.IsActive,
+                    CompanyId = t.Product.CompanyId,
+                    CategoryId = t.Product.CategoryId,
+                    UnitOfMeasureId = t.Product.UnitOfMeasureId,
+                    CreatedAt = t.Product.CreatedAt,
+                    UpdatedAt = t.Product.UpdatedAt
+                } : null,
+                FromWarehouse = t.FromWarehouse != null ? new WarehouseDto
+                {
+                    Id = t.FromWarehouse.Id,
+                    Name = t.FromWarehouse.Name,
+                    Description = t.FromWarehouse.Description,
+                    Address = t.FromWarehouse.Address,
+                    IsActive = t.FromWarehouse.IsActive,
+                    CompanyId = t.FromWarehouse.CompanyId,
+                    CreatedAt = t.FromWarehouse.CreatedAt,
+                    UpdatedAt = t.FromWarehouse.UpdatedAt
+                } : null,
+                ToWarehouse = t.ToWarehouse != null ? new WarehouseDto
+                {
+                    Id = t.ToWarehouse.Id,
+                    Name = t.ToWarehouse.Name,
+                    Description = t.ToWarehouse.Description,
+                    Address = t.ToWarehouse.Address,
+                    IsActive = t.ToWarehouse.IsActive,
+                    CompanyId = t.ToWarehouse.CompanyId,
+                    CreatedAt = t.ToWarehouse.CreatedAt,
+                    UpdatedAt = t.ToWarehouse.UpdatedAt
                 } : null
             }).ToList();
         }
